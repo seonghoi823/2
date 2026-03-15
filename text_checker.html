@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>문자/이미지 진단</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <nav>
+    <a href="/">실시간 진단</a>
+    <a href="/recordings.html">녹음 목록</a>
+    <a href="/text_checker.html">문자/이미지 진단</a>
+  </nav>
+  <div class="container">
+    <h1>문자/이미지 사기 진단</h1>
+    <p>의심되는 문자나 이미지(캡처본)를 업로드하세요.</p>
+    <textarea id="textInput" placeholder="분석할 문자 내용을 입력하세요."></textarea>
+    <div style="margin-bottom: 20px;">
+      <label for="imageInput" style="display: block; margin-bottom: 10px; font-size: 14px; color: #666;">이미지 업로드:</label>
+      <input type="file" id="imageInput" accept="image/*">
+    </div>
+    <button id="checkButton">사기 여부 진단하기</button>
+    <div style="margin-top: 20px;">
+      <p>결과: <span id="result">진단 전입니다.</span></p>
+    </div>
+  </div>
+  <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>
