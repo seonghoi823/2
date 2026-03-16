@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>제휴 문의 - 실시간 사기 탐지</title>
+  <link href='/style.css' rel='stylesheet'>
+  <style>
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--input-border);
+      background: var(--card-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+    }
+    .form-group textarea {
+      width: 100%;
+      height: 150px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--input-border);
+      background: var(--card-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    .submit-btn {
+      width: 100%;
+      background: var(--primary-color);
+      color: white;
+      padding: 14px;
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" data-i18n="nav_home">실시간 진단</a>
+    <a href="/recordings.html" data-i18n="nav_list">저장 목록</a>
+    <a href="/text_checker.html" data-i18n="nav_text">문자/이미지 진단</a>
+    <a href="/partnership.html" style="color: var(--primary-color);">제휴 문의</a>
+    <button id="loginBtn" style="margin-left: 20px;"></button>
+  </nav>
+
+  <div class="container">
+    <h1>제휴 문의</h1>
+    <p>서비스 제휴 및 비즈니스 문의를 남겨주시면 담당자가 확인 후 연락드리겠습니다.</p>
+    
+    <!-- Formspree 연동 폼 -->
+    <!-- 'https://formspree.io/f/YOUR_FORMSPREE_ID' 부분의 YOUR_FORMSPREE_ID를 실제 ID로 변경하세요 -->
+    <form action="https://formspree.io/f/mqakpree" method="POST">
+      <div class="form-group">
+        <label for="name">이름 / 회사명</label>
+        <input type="text" id="name" name="name" placeholder="성함 또는 회사명을 입력하세요" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="email">이메일 주소</label>
+        <input type="email" id="email" name="_replyto" placeholder="contact@example.com" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="subject">문의 제목</label>
+        <input type="text" id="subject" name="subject" placeholder="문의 제목을 입력하세요" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="message">문의 내용</label>
+        <textarea id="message" name="message" placeholder="상세한 문의 내용을 입력해 주세요" required></textarea>
+      </div>
+      
+      <button type="submit" class="submit-btn">문의 보내기</button>
+    </form>
+  </div>
+
+  <div class="settings-bar">
+    <button id="themeToggle" data-i18n="btn_theme">테마 변경</button>
+    <button id="langToggle" data-i18n="btn_lang">English</button>
+  </div>
+
+  <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>
