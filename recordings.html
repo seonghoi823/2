@@ -3,32 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>녹음 목록</title>
+  <title>저장 목록</title>
   <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
   <nav>
-    <a href="/">실시간 진단</a>
-    <a href="/recordings.html">저장 목록</a>
-    <a href="/text_checker.html">문자/이미지 진단</a>
-    <div class="nav-right">
-      <button id="themeToggle">테마 변경</button>
-      <button id="loginBtn">로그인</button>
-    </div>
+    <a href="/" data-i18n="nav_home">실시간 진단</a>
+    <a href="/recordings.html" data-i18n="nav_list">저장 목록</a>
+    <a href="/text_checker.html" data-i18n="nav_text">문자/이미지 진단</a>
+    <button id="loginBtn" style="margin-left: 20px;"></button>
   </nav>
+
   <div class="container">
-    <h1>녹음된 통화 목록</h1>
-    <ul id="recordingsList">
-      <p>저장된 녹음이 없습니다.</p>
-    </ul>
+    <h1 data-i18n="list_rec_title">녹음된 통화 목록</h1>
+    <ul id="recordingsList"></ul>
   </div>
 
   <div class="container">
-    <h1>문자/이미지 진단 결과 목록</h1>
-    <ul id="resultsList">
-      <p>저장된 결과가 없습니다.</p>
-    </ul>
+    <h1 data-i18n="list_res_title">문자/이미지 진단 결과 목록</h1>
+    <ul id="resultsList"></ul>
   </div>
+
+  <div class="settings-bar">
+    <button id="themeToggle" data-i18n="btn_theme">테마 변경</button>
+    <button id="langToggle" data-i18n="btn_lang">English</button>
+  </div>
+
   <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>

@@ -8,27 +8,31 @@
 </head>
 <body>
   <nav>
-    <a href="/">실시간 진단</a>
-    <a href="/recordings.html">저장 목록</a>
-    <a href="/text_checker.html">문자/이미지 진단</a>
-    <div class="nav-right">
-      <button id="themeToggle">테마 변경</button>
-      <button id="loginBtn">로그인</button>
-    </div>
+    <a href="/" data-i18n="nav_home">실시간 진단</a>
+    <a href="/recordings.html" data-i18n="nav_list">저장 목록</a>
+    <a href="/text_checker.html" data-i18n="nav_text">문자/이미지 진단</a>
+    <button id="loginBtn" style="margin-left: 20px;"></button>
   </nav>
+
   <div class="container">
-    <h1>문자/이미지 사기 진단</h1>
-    <p>의심되는 문자나 이미지(캡처본)를 업로드하세요.</p>
-    <textarea id="textInput" placeholder="분석할 문자 내용을 입력하세요."></textarea>
+    <h1 data-i18n="text_title">문자/이미지 사기 진단</h1>
+    <p data-i18n="text_desc">의심되는 문자나 이미지(캡처본)를 업로드하세요.</p>
+    <textarea id="textInput" data-i18n="placeholder_text"></textarea>
     <div style="margin-bottom: 20px;">
-      <label for="imageInput" style="display: block; margin-bottom: 10px; font-size: 14px; color: #666;">이미지 업로드:</label>
+      <label for="imageInput" style="display: block; margin-bottom: 10px; font-size: 14px; color: #666;" data-i18n="label_image">이미지 업로드:</label>
       <input type="file" id="imageInput" accept="image/*">
     </div>
-    <button id="checkButton">사기 여부 진단하기</button>
+    <button id="checkButton" data-i18n="btn_check">사기 여부 진단하기</button>
     <div style="margin-top: 20px;">
-      <p>결과: <span id="result">진단 전입니다.</span></p>
+      <p>결과: <span id="result">-</span></p>
     </div>
   </div>
+
+  <div class="settings-bar">
+    <button id="themeToggle" data-i18n="btn_theme">테마 변경</button>
+    <button id="langToggle" data-i18n="btn_lang">English</button>
+  </div>
+
   <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>

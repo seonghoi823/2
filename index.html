@@ -7,22 +7,37 @@
   <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
-  <nav>
-    <a href="/">실시간 진단</a>
-    <a href="/recordings.html">저장 목록</a>
-    <a href="/text_checker.html">문자/이미지 진단</a>
-    <div class="nav-right">
-      <button id="themeToggle">테마 변경</button>
-      <button id="loginBtn">로그인</button>
-    </div>
+  <nav class="hidden">
+    <a href="/" data-i18n="nav_home">실시간 진단</a>
+    <a href="/recordings.html" data-i18n="nav_list">저장 목록</a>
+    <a href="/text_checker.html" data-i18n="nav_text">문자/이미지 진단</a>
+    <button id="loginBtn" style="margin-left: 20px;"></button>
   </nav>
-  <div class="container">
-    <h1>실시간 통화 사기 진단</h1>
-    <p>통화 중 "진단 시작"을 누르면 AI가 실시간으로 분석합니다.</p>
-    <button id="startButton">진단 시작</button>
-    <button id="stopButton" disabled>진단 중지</button>
-    <p>상태: <span id="status">대기 중</span></p>
+
+  <!-- Guest View -->
+  <div id="guestSection" class="welcome-section">
+    <h1 data-i18n="welcome_title">실시간 사기 탐지 서비스</h1>
+    <p data-i18n="welcome_desc">AI 기술을 활용하여 보이스피싱과 스미싱으로부터 안전하게 보호해 드립니다.</p>
+    <div style="margin-top: 30px;">
+      <button onclick="location.href='/login.html'" style="background: var(--primary-color); color: white;" data-i18n="btn_login">로그인</button>
+      <button style="background: var(--card-bg); color: var(--text-color); border: 1px solid var(--input-border);" data-i18n="btn_signup">회원가입</button>
+    </div>
   </div>
+
+  <!-- Authenticated View -->
+  <div id="mainSection" class="container hidden">
+    <h1 data-i18n="diag_title">실시간 통화 사기 진단</h1>
+    <p data-i18n="diag_desc">통화 중 "진단 시작"을 누르면 AI가 실시간으로 분석합니다.</p>
+    <button id="startButton" data-i18n="btn_start">진단 시작</button>
+    <button id="stopButton" disabled data-i18n="btn_stop">진단 중지</button>
+    <p>상태: <span id="status" data-i18n="status_idle">대기 중</span></p>
+  </div>
+
+  <div class="settings-bar">
+    <button id="themeToggle" data-i18n="btn_theme">테마 변경</button>
+    <button id="langToggle" data-i18n="btn_lang">English</button>
+  </div>
+
   <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>
