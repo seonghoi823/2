@@ -85,7 +85,7 @@ const currentUser = localStorage.getItem('currentUser') || 'Guest';
 
 // IndexedDB Setup
 const DB_NAME = 'ScamDetectionDB';
-const DB_VERSION = 3; // Version up for Users store
+const DB_VERSION = 3;
 const RECORDINGS_STORE = 'recordings';
 const RESULTS_STORE = 'results';
 const USERS_STORE = 'users';
@@ -107,6 +107,8 @@ dbRequest.onupgradeneeded = (event) => {
 
 dbRequest.onsuccess = (event) => {
   db = event.target.result;
+  console.log('DB Initialized');
+  // Refresh UI or load data if needed after DB is ready
   if (window.location.pathname.includes('recordings.html')) {
     loadRecordings();
     loadResults();
@@ -119,9 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initAuthView();
   
-  const langBtn = document.getElementById('langToggle');
-  if (langBtn) {
-    langBtn.addEventListener('click', () => {
+  const langToggle = document.getElementById('langToggle');
+  if (langToggle) {
+    langToggle.addEventListener('click', () => {
       currentLang = currentLang === 'ko' ? 'en' : 'ko';
       localStorage.setItem('lang', currentLang);
       applyLanguage(currentLang);
@@ -145,6 +147,11 @@ function applyLanguage(lang) {
       }
     }
   });
+  // Update nav buttons if any
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) {
+    loginBtn.textContent = isLoggedIn ? `${currentUser} (${translations[lang].btn_logout})` : translations[lang].btn_login;
+  }
 }
 
 function initTheme() {
@@ -168,6 +175,10 @@ function initAuthView() {
   const nav = document.querySelector('nav');
   const loginBtn = document.getElementById('loginBtn');
 
+  const path = window.location.pathname;
+  const isLoginPage = path.includes('login.html');
+  const isIndexPage = path === '/' || path.endsWith('/') || path.endsWith('index.html');
+
   if (isLoggedIn) {
     if (guestSection) guestSection.classList.add('hidden');
     if (mainSection) mainSection.classList.remove('hidden');
@@ -177,21 +188,20 @@ function initAuthView() {
     if (mainSection) mainSection.classList.add('hidden');
     if (nav) nav.classList.add('hidden');
     
-    const path = window.location.pathname;
-    if (path !== '/' && path !== '/index.html' && path !== '/login.html') {
-      window.location.href = '/';
+    // Redirect only if not on home or login page
+    if (!isLoginPage && !isIndexPage) {
+      window.location.href = './index.html'; // Use relative path
     }
   }
 
   if (loginBtn) {
-    loginBtn.textContent = isLoggedIn ? `${currentUser} (${translations[currentLang].btn_logout})` : translations[currentLang].btn_login;
     loginBtn.addEventListener('click', () => {
       if (isLoggedIn) {
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('currentUser');
-        window.location.href = '/';
+        window.location.href = './index.html';
       } else {
-        window.location.href = '/login.html';
+        window.location.href = './login.html';
       }
     });
   }
@@ -204,7 +214,8 @@ function initLoginPage() {
   const passwordInput = document.getElementById('password');
   const loginMsg = document.getElementById('loginMsg');
 
-  doLoginBtn.addEventListener('click', async () => {
+  const handleLogin = () => {
+    if (!db) { setTimeout(handleLogin, 100); return; }
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
     if (!username || !password) {
@@ -224,15 +235,16 @@ function initLoginPage() {
         localStorage.setItem('currentUser', username);
         loginMsg.textContent = translations[currentLang].login_success;
         loginMsg.style.color = 'green';
-        setTimeout(() => window.location.href = '/', 1000);
+        setTimeout(() => window.location.href = './index.html', 1000);
       } else {
         loginMsg.textContent = translations[currentLang].login_fail;
         loginMsg.style.color = 'red';
       }
     };
-  });
+  };
 
-  doSignupBtn.addEventListener('click', async () => {
+  const handleSignup = () => {
+    if (!db) { setTimeout(handleSignup, 100); return; }
     const username = usernameInput.value.trim();
     const password = passwordInput.value.trim();
     if (!username || !password) {
@@ -250,12 +262,17 @@ function initLoginPage() {
         loginMsg.textContent = translations[currentLang].id_taken;
         loginMsg.style.color = 'red';
       } else {
-        store.add({ username, password });
-        loginMsg.textContent = translations[currentLang].signup_success;
-        loginMsg.style.color = 'green';
+        const addRequest = store.add({ username, password });
+        addRequest.onsuccess = () => {
+          loginMsg.textContent = translations[currentLang].signup_success;
+          loginMsg.style.color = 'green';
+        };
       }
     };
-  });
+  };
+
+  if (doLoginBtn) doLoginBtn.addEventListener('click', handleLogin);
+  if (doSignupBtn) doSignupBtn.addEventListener('click', handleSignup);
 }
 
 // Features Logic
@@ -275,7 +292,6 @@ if (startButton) {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         chunks = [];
         await saveRecording(blob);
-        alert('녹음이 본인 계정에 영구 저장되었습니다.');
       };
       mediaRecorder.start();
       startButton.disabled = true;
@@ -287,21 +303,26 @@ if (startButton) {
     }
   });
 
-  stopButton.addEventListener('click', () => {
-    mediaRecorder.stop();
-    startButton.disabled = false;
-    stopButton.disabled = true;
-    statusSpan.textContent = translations[currentLang].status_idle;
-    statusSpan.style.color = 'var(--text-color)';
-  });
+  if (stopButton) {
+    stopButton.addEventListener('click', () => {
+      mediaRecorder.stop();
+      startButton.disabled = false;
+      stopButton.disabled = true;
+      statusSpan.textContent = translations[currentLang].status_idle;
+      statusSpan.style.color = 'var(--text-color)';
+    });
+  }
 }
 
 const checkButton = document.getElementById('checkButton');
 if (checkButton) {
   checkButton.addEventListener('click', async () => {
-    const text = document.getElementById('textInput').value;
-    const image = document.getElementById('imageInput').files[0];
+    const textInput = document.getElementById('textInput');
+    const imageInput = document.getElementById('imageInput');
     const resultSpan = document.getElementById('result');
+    
+    const text = textInput ? textInput.value : '';
+    const image = imageInput ? imageInput.files[0] : null;
     let analysisResult = '';
 
     if (text) {
@@ -314,6 +335,8 @@ if (checkButton) {
       resultSpan.textContent = translations[currentLang].analyzing;
       await new Promise(r => setTimeout(r, 1000));
       analysisResult = translations[currentLang].image_safe;
+    } else {
+      return;
     }
 
     resultSpan.textContent = analysisResult;
@@ -324,21 +347,25 @@ if (checkButton) {
 
 // Database Helpers
 async function saveRecording(blob) {
+  if (!db) return;
   const tx = db.transaction([RECORDINGS_STORE], 'readwrite');
   tx.objectStore(RECORDINGS_STORE).add({ blob, timestamp: new Date().toLocaleString(), name: `Call - ${new Date().toLocaleTimeString()}`, user: currentUser });
+  tx.oncomplete = () => alert('녹음이 본인 계정에 영구 저장되었습니다.');
 }
 
 async function saveResult(data) {
+  if (!db) return;
   const tx = db.transaction([RESULTS_STORE], 'readwrite');
   tx.objectStore(RESULTS_STORE).add(data);
 }
 
 async function loadRecordings() {
-  if (!db) return;
+  if (!db) { setTimeout(loadRecordings, 100); return; }
   const request = db.transaction([RECORDINGS_STORE], 'readonly').objectStore(RECORDINGS_STORE).getAll();
   request.onsuccess = () => {
     const data = request.result.filter(r => r.user === currentUser);
     const list = document.getElementById('recordingsList');
+    if (!list) return;
     list.innerHTML = data.length ? '' : `<p>${translations[currentLang].no_data}</p>`;
     data.forEach(rec => {
       const li = document.createElement('li');
@@ -350,11 +377,12 @@ async function loadRecordings() {
 }
 
 async function loadResults() {
-  if (!db) return;
+  if (!db) { setTimeout(loadResults, 100); return; }
   const request = db.transaction([RESULTS_STORE], 'readonly').objectStore(RESULTS_STORE).getAll();
   request.onsuccess = () => {
     const data = request.result.filter(r => r.user === currentUser);
     const list = document.getElementById('resultsList');
+    if (!list) return;
     list.innerHTML = data.length ? '' : `<p>${translations[currentLang].no_data}</p>`;
     data.forEach(res => {
       const li = document.createElement('li');
@@ -366,6 +394,7 @@ async function loadResults() {
 }
 
 window.deleteItem = (store, id) => {
+  if (!db) return;
   const tx = db.transaction([store], 'readwrite');
   tx.objectStore(store).delete(id);
   tx.oncomplete = () => window.location.reload();
