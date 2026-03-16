@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>소통과 공감 - 실시간 사기 탐지</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <nav>
+    <a href="/" data-i18n="nav_home">실시간 진단</a>
+    <a href="/recordings.html" data-i18n="nav_list">저장 목록</a>
+    <a href="/text_checker.html" data-i18n="nav_text">문자/이미지 진단</a>
+    <a href="/partnership.html">제휴 문의</a>
+    <a href="/community.html" style="color: var(--primary-color);">소통과 공감</a>
+    <button id="loginBtn" style="margin-left: 20px;"></button>
+  </nav>
+
+  <!-- 목록 보기 섹션 -->
+  <div id="listSection" class="container">
+    <h1>소통과 공감</h1>
+    <p>익명으로 자유롭게 소통하는 공간입니다.</p>
+    <button id="showWriteForm" style="width: 100%; margin-bottom: 20px;">글쓰기</button>
+    <div id="postList">
+      <!-- 게시글 리스트가 여기에 동적으로 삽입됨 -->
+    </div>
+  </div>
+
+  <!-- 글쓰기 섹션 (기본 숨김) -->
+  <div id="writeSection" class="container hidden">
+    <h1>새 글 작성</h1>
+    <div class="form-group">
+      <input type="text" id="postTitle" placeholder="제목을 입력하세요" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--input-border);">
+      <textarea id="postContent" placeholder="내용을 입력하세요" style="width:100%; height:200px; padding:12px; border-radius:8px; border:1px solid var(--input-border);"></textarea>
+      <div style="text-align: left; margin: 10px 0;">
+        <label><input type="checkbox" id="isAnonymous" checked> 익명으로 작성</label>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button id="submitPost" style="flex: 1; background: var(--primary-color); color: white;">등록</button>
+      <button id="cancelWrite" style="flex: 1; background: #ccc;">취소</button>
+    </div>
+  </div>
+
+  <!-- 상세 보기 섹션 (기본 숨김) -->
+  <div id="detailSection" class="container hidden">
+    <button id="backToList" style="float: left; padding: 5px 10px; font-size: 14px;">&larr; 목록으로</button>
+    <div style="clear: both; padding-top: 20px;">
+      <h2 id="detailTitle"></h2>
+      <p style="text-align: left; color: #888; font-size: 14px;">작성자: <span id="detailAuthor"></span> | <span id="detailDate"></span></p>
+      <hr>
+      <div id="detailContent" style="text-align: left; min-height: 100px; padding: 20px 0; line-height: 1.6;"></div>
+      <div style="margin: 20px 0;">
+        <button id="likeButton" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+          공감 ❤️ <span id="detailLikes">0</span>
+        </button>
+      </div>
+      <hr>
+      <!-- Disqus 영역 -->
+      <div id="disqus_thread"></div>
+    </div>
+  </div>
+
+  <div class="settings-bar">
+    <button id="themeToggle" data-i18n="btn_theme">테마 변경</button>
+    <button id="langToggle" data-i18n="btn_lang">English</button>
+    <button class="community-btn" onclick="location.href='/community.html'" data-i18n="btn_community">소통과 공감</button>
+  </div>
+
+  <script>
+    // Disqus 로드 함수
+    function loadDisqus(identifier, title) {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://6team.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', +new Date());
+      
+      window.disqus_config = function () {
+        this.page.url = window.location.origin + window.location.pathname + '#!post=' + identifier;
+        this.page.identifier = identifier;
+        this.page.title = title;
+      };
+      
+      if (window.DISQUS) {
+        DISQUS.reset({
+          reload: true,
+          config: function () {
+            this.page.url = window.location.origin + window.location.pathname + '#!post=' + identifier;
+            this.page.identifier = identifier;
+            this.page.title = title;
+          }
+        });
+      } else {
+        (d.head || d.body).appendChild(s);
+      }
+    }
+  </script>
+  <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>

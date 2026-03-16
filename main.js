@@ -4,7 +4,7 @@ const translations = {
     nav_home: "실시간 진단", nav_list: "저장 목록", nav_text: "문자/이미지 진단",
     welcome_title: "실시간 사기 탐지 서비스", welcome_desc: "AI 기술로 보이스피싱으로부터 보호합니다.",
     btn_login: "로그인", btn_signup: "회원가입", btn_logout: "로그아웃",
-    btn_theme: "테마 변경", btn_lang: "English",
+    btn_theme: "테마 변경", btn_lang: "English", btn_community: "소통과 공감",
     diag_title: "실시간 통화 사기 진단", diag_desc: "통화 중 실시간으로 분석합니다.",
     btn_start: "진단 시작", btn_stop: "진단 중지",
     status_idle: "대기 중", status_active: "진단 중...",
@@ -17,7 +17,7 @@ const translations = {
     nav_home: "Diagnosis", nav_list: "Records", nav_text: "Text Check",
     welcome_title: "Fraud Detection", welcome_desc: "Protecting you from phishing with AI.",
     btn_login: "Login", btn_signup: "Sign Up", btn_logout: "Logout",
-    btn_theme: "Theme", btn_lang: "한국어",
+    btn_theme: "Theme", btn_lang: "한국어", btn_community: "Community",
     diag_title: "Live Call Diagnosis", diag_desc: "Real-time AI analysis active.",
     btn_start: "Start", btn_stop: "Stop",
     status_idle: "Idle", status_active: "Analyzing...",
@@ -70,26 +70,147 @@ function updateAuthView() {
   const guestSection = document.getElementById('guestSection');
   const mainSection = document.getElementById('mainSection');
   const nav = document.querySelector('nav');
+  const communityBtns = document.querySelectorAll('.community-btn');
 
   if (isLoggedIn) {
     if (guestSection) guestSection.classList.add('hidden');
     if (mainSection) mainSection.classList.remove('hidden');
     if (nav) nav.classList.remove('hidden');
+    communityBtns.forEach(btn => btn.classList.remove('hidden'));
   } else {
     if (guestSection) guestSection.classList.remove('hidden');
     if (mainSection) mainSection.classList.add('hidden');
     if (nav) nav.classList.add('hidden');
+    communityBtns.forEach(btn => btn.classList.add('hidden'));
     
-    // 보호된 페이지 접근 제한 (로그인 페이지와 인덱스가 아닌 경우 홈으로)
+    // 보호된 페이지 접근 제한
+    const path = window.location.pathname;
     const isLoginPage = !!document.getElementById('doLogin');
     const isGuestPage = !!document.getElementById('guestSection');
-    if (!isLoginPage && !isGuestPage) {
+    const isPartnershipPage = path.includes('partnership.html');
+    
+    if (!isLoginPage && !isGuestPage && !isPartnershipPage) {
       window.location.href = './index.html';
     }
   }
 }
 
-// --- 5. 페이지별 로직 ---
+// --- 5. 커뮤니티 로직 ---
+function setupCommunity() {
+  const listSection = document.getElementById('listSection');
+  if (!listSection) return;
+
+  const writeSection = document.getElementById('writeSection');
+  const detailSection = document.getElementById('detailSection');
+  const postList = document.getElementById('postList');
+  const showWriteBtn = document.getElementById('showWriteForm');
+  const submitBtn = document.getElementById('submitPost');
+  const cancelBtn = document.getElementById('cancelWrite');
+  const backBtn = document.getElementById('backToList');
+  const likeBtn = document.getElementById('likeButton');
+
+  // 데이터 로드
+  const getPosts = () => JSON.parse(localStorage.getItem('posts') || '[]');
+  const savePosts = (posts) => localStorage.setItem('posts', JSON.stringify(posts));
+
+  const renderList = () => {
+    const posts = getPosts().sort((a, b) => b.id - a.id);
+    postList.innerHTML = posts.length ? '' : '<p>첫 번째 글을 작성해보세요!</p>';
+    posts.forEach(post => {
+      const div = document.createElement('div');
+      div.className = 'recording-item'; // 기존 스타일 재사용
+      div.style.cursor = 'pointer';
+      div.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0;">${post.title}</h3>
+          <span style="color: var(--danger-color);">❤️ ${post.likes || 0}</span>
+        </div>
+      `;
+      div.onclick = () => showDetail(post.id);
+      postList.appendChild(div);
+    });
+  };
+
+  const showDetail = (id) => {
+    const post = getPosts().find(p => p.id === id);
+    if (!post) return;
+
+    document.getElementById('detailTitle').textContent = post.title;
+    document.getElementById('detailAuthor').textContent = post.isAnonymous ? '익명' : post.author;
+    document.getElementById('detailDate').textContent = post.timestamp;
+    document.getElementById('detailContent').textContent = post.content;
+    document.getElementById('detailLikes').textContent = post.likes || 0;
+
+    listSection.classList.add('hidden');
+    writeSection.classList.add('hidden');
+    detailSection.classList.remove('hidden');
+
+    // Disqus 로드
+    if (typeof loadDisqus === 'function') {
+      loadDisqus(post.id, post.title);
+    }
+
+    // 공감 버튼 이벤트
+    likeBtn.onclick = () => {
+      const posts = getPosts();
+      const pIdx = posts.findIndex(p => p.id === id);
+      posts[pIdx].likes = (posts[pIdx].likes || 0) + 1;
+      savePosts(posts);
+      document.getElementById('detailLikes').textContent = posts[pIdx].likes;
+    };
+  };
+
+  showWriteBtn.onclick = () => {
+    listSection.classList.add('hidden');
+    writeSection.classList.remove('hidden');
+  };
+
+  cancelBtn.onclick = () => {
+    writeSection.classList.add('hidden');
+    listSection.classList.remove('hidden');
+  };
+
+  backBtn.onclick = () => {
+    detailSection.classList.add('hidden');
+    listSection.classList.remove('hidden');
+    renderList();
+  };
+
+  submitBtn.onclick = () => {
+    const title = document.getElementById('postTitle').value.trim();
+    const content = document.getElementById('postContent').value.trim();
+    const isAnonymous = document.getElementById('isAnonymous').checked;
+    
+    if (!title || !content) {
+      alert('제목과 내용을 입력해주세요.');
+      return;
+    }
+
+    const posts = getPosts();
+    const newPost = {
+      id: Date.now(),
+      title,
+      content,
+      isAnonymous,
+      author: localStorage.getItem('currentUser'),
+      likes: 0,
+      timestamp: new Date().toLocaleString()
+    };
+
+    posts.push(newPost);
+    savePosts(posts);
+    
+    document.getElementById('postTitle').value = '';
+    document.getElementById('postContent').value = '';
+    writeSection.classList.add('hidden');
+    listSection.classList.remove('hidden');
+    renderList();
+  };
+
+  renderList();
+}
+
+// --- 6. 페이지별 로직 ---
 async function setupPages() {
   // 테마/언어 설정 (공통)
   document.getElementById('themeToggle')?.addEventListener('click', () => {
@@ -106,12 +227,19 @@ async function setupPages() {
 
   document.getElementById('loginBtn')?.addEventListener('click', () => {
     if (localStorage.getItem('isLoggedIn') === 'true') {
-      localStorage.clear(); // 로그아웃 시 전체 초기화
+      const theme = localStorage.getItem('theme');
+      const lang = localStorage.getItem('lang');
+      localStorage.clear();
+      localStorage.setItem('theme', theme);
+      localStorage.setItem('lang', lang);
       window.location.href = './index.html';
     } else {
       window.location.href = './login.html';
     }
   });
+
+  // 커뮤니티 초기화
+  setupCommunity();
 
   // 로그인/회원가입 페이지
   const doLogin = document.getElementById('doLogin');
@@ -167,25 +295,29 @@ async function setupPages() {
     const status = document.getElementById('status');
 
     startBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        chunks = [];
-        const tx = db.transaction('recordings', 'readwrite');
-        tx.objectStore('recordings').add({ 
-          blob, user: localStorage.getItem('currentUser'), 
-          timestamp: new Date().toLocaleString(), name: 'Call ' + new Date().toLocaleTimeString() 
-        });
-        alert('저장 완료!');
-      };
-      mediaRecorder.start();
-      startBtn.disabled = true; stopBtn.disabled = false;
-      status.textContent = translations[currentLang].status_active;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/webm' });
+          chunks = [];
+          const tx = db.transaction('recordings', 'readwrite');
+          tx.objectStore('recordings').add({ 
+            blob, user: localStorage.getItem('currentUser'), 
+            timestamp: new Date().toLocaleString(), name: 'Call ' + new Date().toLocaleTimeString() 
+          });
+          alert('저장 완료!');
+        };
+        mediaRecorder.start();
+        startBtn.disabled = true; stopBtn.disabled = false;
+        status.textContent = translations[currentLang].status_active;
+      } catch (err) {
+        alert('마이크 권한이 필요합니다.');
+      }
     };
     if (stopBtn) stopBtn.onclick = () => {
-      mediaRecorder.stop();
+      if (mediaRecorder) mediaRecorder.stop();
       startBtn.disabled = false; stopBtn.disabled = true;
       status.textContent = translations[currentLang].status_idle;
     };
@@ -241,10 +373,10 @@ window.deleteItem = (store, id) => {
   db.transaction(store, 'readwrite').objectStore(store).delete(id).onsuccess = () => window.location.reload();
 };
 
-// --- 6. 실행 시작 ---
+// --- 7. 실행 시작 ---
 (async () => {
   document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
-  updateAuthView(); // 즉시 UI 처리
+  updateAuthView();
   await initDB();
   applyLang();
   await setupPages();
