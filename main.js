@@ -1,183 +1,75 @@
-// Translations
+// --- 1. 다국어 데이터 ---
 const translations = {
   ko: {
-    nav_home: "실시간 진단",
-    nav_list: "저장 목록",
-    nav_text: "문자/이미지 진단",
-    welcome_title: "실시간 사기 탐지 서비스",
-    welcome_desc: "AI 기술을 활용하여 보이스피싱과 스미싱으로부터 안전하게 보호해 드립니다.",
-    login_req: "서비스 이용을 위해 로그인해주세요.",
-    btn_login: "로그인",
-    btn_signup: "회원가입",
-    btn_logout: "로그아웃",
-    btn_theme: "테마 변경",
-    btn_lang: "English",
-    diag_title: "실시간 통화 사기 진단",
-    diag_desc: "통화 중 \"진단 시작\"을 누르면 AI가 실시간으로 분석합니다.",
-    btn_start: "진단 시작",
-    btn_stop: "진단 중지",
-    status_idle: "대기 중",
-    status_active: "진단 중 (실시간 분석 활성화)",
-    status_alert: "⚠️ 사기 의심됨! ⚠️",
-    list_rec_title: "녹음된 통화 목록",
-    list_res_title: "문자/이미지 진단 결과 목록",
-    no_data: "저장된 데이터가 없습니다.",
-    text_title: "문자/이미지 사기 진단",
-    text_desc: "의심되는 문자나 이미지(캡처본)를 업로드하세요.",
-    placeholder_text: "분석할 문자 내용을 입력하세요.",
-    label_image: "이미지 업로드:",
-    btn_check: "사기 여부 진단하기",
-    analyzing: "분석 중...",
-    safe_msg: "정상적인 내용으로 보입니다.",
-    scam_msg: "⚠️ 사기 의심! 탐지된 키워드: ",
-    image_safe: "이미지 분석 결과: 사기 의심 정황 없음 (안전)",
-    login_success: "로그인 성공! 이동 중...",
-    signup_success: "회원가입 성공! 이제 로그인해주세요.",
-    login_fail: "아이디 또는 비밀번호를 확인해주세요.",
-    id_taken: "이미 존재하는 아이디입니다.",
-    fill_all: "아이디와 비밀번호를 모두 입력해주세요.",
-    login_title: "로그인 / 회원가입"
+    nav_home: "실시간 진단", nav_list: "저장 목록", nav_text: "문자/이미지 진단",
+    welcome_title: "실시간 사기 탐지 서비스", welcome_desc: "AI 기술로 보이스피싱으로부터 보호합니다.",
+    btn_login: "로그인", btn_signup: "회원가입", btn_logout: "로그아웃",
+    btn_theme: "테마 변경", btn_lang: "English",
+    diag_title: "실시간 통화 사기 진단", diag_desc: "통화 중 실시간으로 분석합니다.",
+    btn_start: "진단 시작", btn_stop: "진단 중지",
+    status_idle: "대기 중", status_active: "진단 중...",
+    no_data: "데이터가 없습니다.",
+    login_success: "로그인 성공!", signup_success: "가입 성공! 로그인해주세요.",
+    login_fail: "정보를 확인해주세요.", id_taken: "이미 있는 아이디입니다.",
+    fill_all: "모두 입력해주세요.", login_title: "로그인 / 회원가입"
   },
   en: {
-    nav_home: "Real-time Diagnosis",
-    nav_list: "Storage List",
-    nav_text: "Text/Image Diagnosis",
-    welcome_title: "Real-time Fraud Detection",
-    welcome_desc: "We protect you from voice phishing and smishing using AI technology.",
-    login_req: "Please login to use our service.",
-    btn_login: "Login",
-    btn_signup: "Sign Up",
-    btn_logout: "Logout",
-    btn_theme: "Toggle Theme",
-    btn_lang: "한국어",
-    diag_title: "Real-time Call Fraud Diagnosis",
-    diag_desc: "Press \"Start\" during a call for real-time AI analysis.",
-    btn_start: "Start Diagnosis",
-    btn_stop: "Stop Diagnosis",
-    status_idle: "Waiting",
-    status_active: "Diagnosing (Real-time Analysis Active)",
-    status_alert: "⚠️ Fraud Suspected! ⚠️",
-    list_rec_title: "Recorded Calls",
-    list_res_title: "Text/Image Diagnosis Results",
-    no_data: "No saved data found.",
-    text_title: "Text/Image Fraud Diagnosis",
-    text_desc: "Upload suspicious texts or images (screenshots).",
-    placeholder_text: "Enter text content to analyze.",
-    label_image: "Upload Image:",
-    btn_check: "Analyze for Fraud",
-    analyzing: "Analyzing...",
-    safe_msg: "Content appears to be safe.",
-    scam_msg: "⚠️ Fraud Detected! Keywords: ",
-    image_safe: "Image analysis: No suspicious activity found (Safe)",
-    login_success: "Login successful! Redirecting...",
-    signup_success: "Signup successful! Please login.",
-    login_fail: "Invalid ID or password.",
-    id_taken: "ID already exists.",
-    fill_all: "Please fill in all fields.",
-    login_title: "Login / Signup"
+    nav_home: "Diagnosis", nav_list: "Records", nav_text: "Text Check",
+    welcome_title: "Fraud Detection", welcome_desc: "Protecting you from phishing with AI.",
+    btn_login: "Login", btn_signup: "Sign Up", btn_logout: "Logout",
+    btn_theme: "Theme", btn_lang: "한국어",
+    diag_title: "Live Call Diagnosis", diag_desc: "Real-time AI analysis active.",
+    btn_start: "Start", btn_stop: "Stop",
+    status_idle: "Idle", status_active: "Analyzing...",
+    no_data: "No data.",
+    login_success: "Welcome!", signup_success: "Signed up! Please login.",
+    login_fail: "Check ID/PW.", id_taken: "ID exists.",
+    fill_all: "Fill all fields.", login_title: "Login / Signup"
   }
 };
 
-// State Management
+// --- 2. 상태 및 설정 ---
 let currentLang = localStorage.getItem('lang') || 'ko';
-const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-const currentUser = localStorage.getItem('currentUser') || 'Guest';
-
-// IndexedDB Setup
-const DB_NAME = 'ScamDetectionDB';
-const DB_VERSION = 3;
-const RECORDINGS_STORE = 'recordings';
-const RESULTS_STORE = 'results';
-const USERS_STORE = 'users';
 let db;
 
-const dbRequest = indexedDB.open(DB_NAME, DB_VERSION);
-dbRequest.onupgradeneeded = (event) => {
-  const db = event.target.result;
-  if (!db.objectStoreNames.contains(RECORDINGS_STORE)) {
-    db.createObjectStore(RECORDINGS_STORE, { keyPath: 'id', autoIncrement: true });
-  }
-  if (!db.objectStoreNames.contains(RESULTS_STORE)) {
-    db.createObjectStore(RESULTS_STORE, { keyPath: 'id', autoIncrement: true });
-  }
-  if (!db.objectStoreNames.contains(USERS_STORE)) {
-    db.createObjectStore(USERS_STORE, { keyPath: 'username' });
-  }
-};
+// --- 3. 데이터베이스 초기화 (Promise) ---
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ScamDetectionDB', 3);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'username' });
+    };
+    request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    request.onerror = (e) => reject(e);
+  });
+}
 
-dbRequest.onsuccess = (event) => {
-  db = event.target.result;
-  console.log('DB Initialized');
-  // Refresh UI or load data if needed after DB is ready
-  if (window.location.pathname.includes('recordings.html')) {
-    loadRecordings();
-    loadResults();
-  }
-};
-
-// UI Initialization
-document.addEventListener('DOMContentLoaded', () => {
-  applyLanguage(currentLang);
-  initTheme();
-  initAuthView();
-  
-  const langToggle = document.getElementById('langToggle');
-  if (langToggle) {
-    langToggle.addEventListener('click', () => {
-      currentLang = currentLang === 'ko' ? 'en' : 'ko';
-      localStorage.setItem('lang', currentLang);
-      applyLanguage(currentLang);
-    });
-  }
-
-  if (window.location.pathname.includes('login.html')) {
-    initLoginPage();
-  }
-});
-
-function applyLanguage(lang) {
-  const i18nElements = document.querySelectorAll('[data-i18n]');
-  i18nElements.forEach(el => {
+// --- 4. 공통 UI 함수 ---
+function applyLang() {
+  const lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (translations[lang][key]) {
-      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-        el.placeholder = translations[lang][key];
-      } else {
-        el.textContent = translations[lang][key];
-      }
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = translations[lang][key];
+      else el.textContent = translations[lang][key];
     }
   });
-  // Update nav buttons if any
+  
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) {
-    loginBtn.textContent = isLoggedIn ? `${currentUser} (${translations[lang].btn_logout})` : translations[lang].btn_login;
+    const user = localStorage.getItem('currentUser');
+    loginBtn.textContent = user ? `${user} (${translations[lang].btn_logout})` : translations[lang].btn_login;
   }
 }
 
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('theme', newTheme);
-    });
-  }
-}
-
-function initAuthView() {
+function updateAuthView() {
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   const guestSection = document.getElementById('guestSection');
   const mainSection = document.getElementById('mainSection');
   const nav = document.querySelector('nav');
-  const loginBtn = document.getElementById('loginBtn');
-
-  const path = window.location.pathname;
-  const isLoginPage = path.includes('login.html');
-  const isIndexPage = path === '/' || path.endsWith('/') || path.endsWith('index.html');
 
   if (isLoggedIn) {
     if (guestSection) guestSection.classList.add('hidden');
@@ -188,214 +80,172 @@ function initAuthView() {
     if (mainSection) mainSection.classList.add('hidden');
     if (nav) nav.classList.add('hidden');
     
-    // Redirect only if not on home or login page
-    if (!isLoginPage && !isIndexPage) {
-      window.location.href = './index.html'; // Use relative path
+    // 보호된 페이지 접근 제한 (로그인 페이지와 인덱스가 아닌 경우 홈으로)
+    const isLoginPage = !!document.getElementById('doLogin');
+    const isGuestPage = !!document.getElementById('guestSection');
+    if (!isLoginPage && !isGuestPage) {
+      window.location.href = './index.html';
     }
-  }
-
-  if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-      if (isLoggedIn) {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('currentUser');
-        window.location.href = './index.html';
-      } else {
-        window.location.href = './login.html';
-      }
-    });
   }
 }
 
-function initLoginPage() {
-  const doLoginBtn = document.getElementById('doLogin');
-  const doSignupBtn = document.getElementById('doSignup');
-  const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
-  const loginMsg = document.getElementById('loginMsg');
+// --- 5. 페이지별 로직 ---
+async function setupPages() {
+  // 테마/언어 설정 (공통)
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  });
 
-  const handleLogin = () => {
-    if (!db) { setTimeout(handleLogin, 100); return; }
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-    if (!username || !password) {
-      loginMsg.textContent = translations[currentLang].fill_all;
-      loginMsg.style.color = 'red';
-      return;
+  document.getElementById('langToggle')?.addEventListener('click', () => {
+    currentLang = currentLang === 'ko' ? 'en' : 'ko';
+    localStorage.setItem('lang', currentLang);
+    applyLang();
+  });
+
+  document.getElementById('loginBtn')?.addEventListener('click', () => {
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+      localStorage.clear(); // 로그아웃 시 전체 초기화
+      window.location.href = './index.html';
+    } else {
+      window.location.href = './login.html';
     }
+  });
 
-    const tx = db.transaction([USERS_STORE], 'readonly');
-    const store = tx.objectStore(USERS_STORE);
-    const request = store.get(username);
+  // 로그인/회원가입 페이지
+  const doLogin = document.getElementById('doLogin');
+  const doSignup = document.getElementById('doSignup');
+  if (doLogin && doSignup) {
+    const userIn = document.getElementById('username');
+    const passIn = document.getElementById('password');
+    const msg = document.getElementById('loginMsg');
 
-    request.onsuccess = () => {
-      const user = request.result;
-      if (user && user.password === password) {
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('currentUser', username);
-        loginMsg.textContent = translations[currentLang].login_success;
-        loginMsg.style.color = 'green';
-        setTimeout(() => window.location.href = './index.html', 1000);
-      } else {
-        loginMsg.textContent = translations[currentLang].login_fail;
-        loginMsg.style.color = 'red';
-      }
+    doLogin.onclick = () => {
+      const tx = db.transaction('users', 'readonly');
+      const request = tx.objectStore('users').get(userIn.value.trim());
+      request.onsuccess = () => {
+        const user = request.result;
+        if (user && user.password === passIn.value.trim()) {
+          localStorage.setItem('isLoggedIn', 'true');
+          localStorage.setItem('currentUser', user.username);
+          msg.textContent = translations[currentLang].login_success;
+          setTimeout(() => window.location.href = './index.html', 500);
+        } else {
+          msg.textContent = translations[currentLang].login_fail;
+        }
+      };
     };
-  };
 
-  const handleSignup = () => {
-    if (!db) { setTimeout(handleSignup, 100); return; }
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value.trim();
-    if (!username || !password) {
-      loginMsg.textContent = translations[currentLang].fill_all;
-      loginMsg.style.color = 'red';
-      return;
-    }
-
-    const tx = db.transaction([USERS_STORE], 'readwrite');
-    const store = tx.objectStore(USERS_STORE);
-    const checkRequest = store.get(username);
-
-    checkRequest.onsuccess = () => {
-      if (checkRequest.result) {
-        loginMsg.textContent = translations[currentLang].id_taken;
-        loginMsg.style.color = 'red';
-      } else {
-        const addRequest = store.add({ username, password });
-        addRequest.onsuccess = () => {
-          loginMsg.textContent = translations[currentLang].signup_success;
-          loginMsg.style.color = 'green';
-        };
+    doSignup.onclick = () => {
+      const username = userIn.value.trim();
+      const password = passIn.value.trim();
+      if (!username || !password) {
+        msg.textContent = translations[currentLang].fill_all;
+        return;
       }
+      const tx = db.transaction('users', 'readwrite');
+      const store = tx.objectStore('users');
+      const check = store.get(username);
+      check.onsuccess = () => {
+        if (check.result) {
+          msg.textContent = translations[currentLang].id_taken;
+        } else {
+          store.add({ username, password });
+          msg.textContent = translations[currentLang].signup_success;
+        }
+      };
     };
-  };
+  }
 
-  if (doLoginBtn) doLoginBtn.addEventListener('click', handleLogin);
-  if (doSignupBtn) doSignupBtn.addEventListener('click', handleSignup);
-}
+  // 실시간 진단 (index.html)
+  const startBtn = document.getElementById('startButton');
+  if (startBtn) {
+    let mediaRecorder;
+    let chunks = [];
+    const stopBtn = document.getElementById('stopButton');
+    const status = document.getElementById('status');
 
-// Features Logic
-const startButton = document.getElementById('startButton');
-if (startButton) {
-  let mediaRecorder;
-  let chunks = [];
-  const stopButton = document.getElementById('stopButton');
-  const statusSpan = document.getElementById('status');
-
-  startButton.addEventListener('click', async () => {
-    try {
+    startBtn.onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         chunks = [];
-        await saveRecording(blob);
+        const tx = db.transaction('recordings', 'readwrite');
+        tx.objectStore('recordings').add({ 
+          blob, user: localStorage.getItem('currentUser'), 
+          timestamp: new Date().toLocaleString(), name: 'Call ' + new Date().toLocaleTimeString() 
+        });
+        alert('저장 완료!');
       };
       mediaRecorder.start();
-      startButton.disabled = true;
-      stopButton.disabled = false;
-      statusSpan.textContent = translations[currentLang].status_active;
-      statusSpan.style.color = 'red';
-    } catch (err) {
-      alert('Microphone access denied.');
-    }
-  });
-
-  if (stopButton) {
-    stopButton.addEventListener('click', () => {
+      startBtn.disabled = true; stopBtn.disabled = false;
+      status.textContent = translations[currentLang].status_active;
+    };
+    if (stopBtn) stopBtn.onclick = () => {
       mediaRecorder.stop();
-      startButton.disabled = false;
-      stopButton.disabled = true;
-      statusSpan.textContent = translations[currentLang].status_idle;
-      statusSpan.style.color = 'var(--text-color)';
-    });
+      startBtn.disabled = false; stopBtn.disabled = true;
+      status.textContent = translations[currentLang].status_idle;
+    };
+  }
+
+  // 목록 로드 (recordings.html)
+  if (document.getElementById('recordingsList')) {
+    const user = localStorage.getItem('currentUser');
+    db.transaction('recordings', 'readonly').objectStore('recordings').getAll().onsuccess = (e) => {
+      const list = document.getElementById('recordingsList');
+      const items = e.target.result.filter(r => r.user === user);
+      list.innerHTML = items.length ? '' : translations[currentLang].no_data;
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'recording-item';
+        div.innerHTML = `<p>${item.name}</p><audio controls src="${URL.createObjectURL(item.blob)}"></audio>
+          <button onclick="deleteItem('recordings', ${item.id})">Delete</button>`;
+        list.appendChild(div);
+      });
+    };
+    db.transaction('results', 'readonly').objectStore('results').getAll().onsuccess = (e) => {
+      const list = document.getElementById('resultsList');
+      const items = e.target.result.filter(r => r.user === user);
+      list.innerHTML = items.length ? '' : translations[currentLang].no_data;
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        div.innerHTML = `<p>${item.timestamp}</p><p>${item.result}</p>
+          <button onclick="deleteItem('results', ${item.id})">Delete</button>`;
+        list.appendChild(div);
+      });
+    };
+  }
+
+  // 문자 진단 (text_checker.html)
+  const checkBtn = document.getElementById('checkButton');
+  if (checkBtn) {
+    checkBtn.onclick = () => {
+      const text = document.getElementById('textInput').value;
+      const resEl = document.getElementById('result');
+      const scam = text.includes('검찰') || text.includes('입금');
+      const result = scam ? '⚠️ 사기 의심' : '정상';
+      resEl.textContent = result;
+      db.transaction('results', 'readwrite').objectStore('results').add({
+        user: localStorage.getItem('currentUser'), result, timestamp: new Date().toLocaleString()
+      });
+    };
   }
 }
 
-const checkButton = document.getElementById('checkButton');
-if (checkButton) {
-  checkButton.addEventListener('click', async () => {
-    const textInput = document.getElementById('textInput');
-    const imageInput = document.getElementById('imageInput');
-    const resultSpan = document.getElementById('result');
-    
-    const text = textInput ? textInput.value : '';
-    const image = imageInput ? imageInput.files[0] : null;
-    let analysisResult = '';
-
-    if (text) {
-      const scamKeywords = ['검찰', '입금', '대출', '수사관', '계좌', '본인확인', 'Prosecutor', 'Deposit', 'Loan', 'Investigator', 'Account'];
-      const foundKeywords = scamKeywords.filter(k => text.includes(k));
-      analysisResult = foundKeywords.length > 0 
-        ? translations[currentLang].scam_msg + foundKeywords.join(', ')
-        : translations[currentLang].safe_msg;
-    } else if (image) {
-      resultSpan.textContent = translations[currentLang].analyzing;
-      await new Promise(r => setTimeout(r, 1000));
-      analysisResult = translations[currentLang].image_safe;
-    } else {
-      return;
-    }
-
-    resultSpan.textContent = analysisResult;
-    resultSpan.style.color = analysisResult.includes('⚠️') ? 'red' : 'green';
-    await saveResult({ type: text ? 'Text' : 'Image', content: text || image.name, result: analysisResult, timestamp: new Date().toLocaleString(), user: currentUser });
-  });
-}
-
-// Database Helpers
-async function saveRecording(blob) {
-  if (!db) return;
-  const tx = db.transaction([RECORDINGS_STORE], 'readwrite');
-  tx.objectStore(RECORDINGS_STORE).add({ blob, timestamp: new Date().toLocaleString(), name: `Call - ${new Date().toLocaleTimeString()}`, user: currentUser });
-  tx.oncomplete = () => alert('녹음이 본인 계정에 영구 저장되었습니다.');
-}
-
-async function saveResult(data) {
-  if (!db) return;
-  const tx = db.transaction([RESULTS_STORE], 'readwrite');
-  tx.objectStore(RESULTS_STORE).add(data);
-}
-
-async function loadRecordings() {
-  if (!db) { setTimeout(loadRecordings, 100); return; }
-  const request = db.transaction([RECORDINGS_STORE], 'readonly').objectStore(RECORDINGS_STORE).getAll();
-  request.onsuccess = () => {
-    const data = request.result.filter(r => r.user === currentUser);
-    const list = document.getElementById('recordingsList');
-    if (!list) return;
-    list.innerHTML = data.length ? '' : `<p>${translations[currentLang].no_data}</p>`;
-    data.forEach(rec => {
-      const li = document.createElement('li');
-      li.className = 'recording-item';
-      li.innerHTML = `<p><strong>${rec.name}</strong> (${rec.timestamp})</p><audio controls src="${URL.createObjectURL(rec.blob)}"></audio><br><button onclick="deleteItem('${RECORDINGS_STORE}', ${rec.id})">Delete</button>`;
-      list.appendChild(li);
-    });
-  };
-}
-
-async function loadResults() {
-  if (!db) { setTimeout(loadResults, 100); return; }
-  const request = db.transaction([RESULTS_STORE], 'readonly').objectStore(RESULTS_STORE).getAll();
-  request.onsuccess = () => {
-    const data = request.result.filter(r => r.user === currentUser);
-    const list = document.getElementById('resultsList');
-    if (!list) return;
-    list.innerHTML = data.length ? '' : `<p>${translations[currentLang].no_data}</p>`;
-    data.forEach(res => {
-      const li = document.createElement('li');
-      li.className = 'result-item';
-      li.innerHTML = `<p><strong>[${res.type}]</strong> ${res.timestamp}</p><p>${res.result}</p><button onclick="deleteItem('${RESULTS_STORE}', ${res.id})">Delete</button>`;
-      list.appendChild(li);
-    });
-  };
-}
-
+// 전역 삭제 함수
 window.deleteItem = (store, id) => {
-  if (!db) return;
-  const tx = db.transaction([store], 'readwrite');
-  tx.objectStore(store).delete(id);
-  tx.oncomplete = () => window.location.reload();
+  db.transaction(store, 'readwrite').objectStore(store).delete(id).onsuccess = () => window.location.reload();
 };
+
+// --- 6. 실행 시작 ---
+(async () => {
+  document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+  updateAuthView(); // 즉시 UI 처리
+  await initDB();
+  applyLang();
+  await setupPages();
+})();
