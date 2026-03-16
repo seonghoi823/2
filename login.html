@@ -8,13 +8,13 @@
 </head>
 <body>
   <div class="container" style="margin-top: 100px;">
-    <h1 data-i18n="login_title">로그인</h1>
+    <h1 data-i18n="login_title">로그인 / 회원가입</h1>
     <p data-i18n="login_req">서비스 이용을 위해 로그인해주세요.</p>
     <div style="display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 0 auto;">
       <input type="text" id="username" placeholder="아이디" style="padding: 10px; border-radius: 4px; border: 1px solid var(--input-border); background: var(--card-bg); color: var(--text-color);">
       <input type="password" id="password" placeholder="비밀번호" style="padding: 10px; border-radius: 4px; border: 1px solid var(--input-border); background: var(--card-bg); color: var(--text-color);">
       <button id="doLogin" style="background: var(--primary-color); color: white;" data-i18n="btn_login">로그인</button>
-      <button style="background: var(--card-bg); color: var(--text-color); border: 1px solid var(--input-border);" data-i18n="btn_signup">회원가입</button>
+      <button id="doSignup" style="background: var(--card-bg); color: var(--text-color); border: 1px solid var(--input-border);" data-i18n="btn_signup">회원가입</button>
     </div>
     <p id="loginMsg" style="margin-top: 15px; font-size: 14px;"></p>
     <a href="/" style="display: block; margin-top: 20px; color: var(--text-color); text-decoration: none;" data-i18n="nav_home">홈으로</a>

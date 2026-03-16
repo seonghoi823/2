@@ -32,8 +32,11 @@ const translations = {
     scam_msg: "⚠️ 사기 의심! 탐지된 키워드: ",
     image_safe: "이미지 분석 결과: 사기 의심 정황 없음 (안전)",
     login_success: "로그인 성공! 이동 중...",
-    login_fail: "아이디를 입력해주세요.",
-    login_title: "로그인"
+    signup_success: "회원가입 성공! 이제 로그인해주세요.",
+    login_fail: "아이디 또는 비밀번호를 확인해주세요.",
+    id_taken: "이미 존재하는 아이디입니다.",
+    fill_all: "아이디와 비밀번호를 모두 입력해주세요.",
+    login_title: "로그인 / 회원가입"
   },
   en: {
     nav_home: "Real-time Diagnosis",
@@ -67,8 +70,11 @@ const translations = {
     scam_msg: "⚠️ Fraud Detected! Keywords: ",
     image_safe: "Image analysis: No suspicious activity found (Safe)",
     login_success: "Login successful! Redirecting...",
-    login_fail: "Please enter your ID.",
-    login_title: "Login"
+    signup_success: "Signup successful! Please login.",
+    login_fail: "Invalid ID or password.",
+    id_taken: "ID already exists.",
+    fill_all: "Please fill in all fields.",
+    login_title: "Login / Signup"
   }
 };
 
@@ -79,12 +85,26 @@ const currentUser = localStorage.getItem('currentUser') || 'Guest';
 
 // IndexedDB Setup
 const DB_NAME = 'ScamDetectionDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3; // Version up for Users store
 const RECORDINGS_STORE = 'recordings';
 const RESULTS_STORE = 'results';
+const USERS_STORE = 'users';
 let db;
 
 const dbRequest = indexedDB.open(DB_NAME, DB_VERSION);
+dbRequest.onupgradeneeded = (event) => {
+  const db = event.target.result;
+  if (!db.objectStoreNames.contains(RECORDINGS_STORE)) {
+    db.createObjectStore(RECORDINGS_STORE, { keyPath: 'id', autoIncrement: true });
+  }
+  if (!db.objectStoreNames.contains(RESULTS_STORE)) {
+    db.createObjectStore(RESULTS_STORE, { keyPath: 'id', autoIncrement: true });
+  }
+  if (!db.objectStoreNames.contains(USERS_STORE)) {
+    db.createObjectStore(USERS_STORE, { keyPath: 'username' });
+  }
+};
+
 dbRequest.onsuccess = (event) => {
   db = event.target.result;
   if (window.location.pathname.includes('recordings.html')) {
@@ -157,7 +177,6 @@ function initAuthView() {
     if (mainSection) mainSection.classList.add('hidden');
     if (nav) nav.classList.add('hidden');
     
-    // Redirect to home if trying to access restricted pages
     const path = window.location.pathname;
     if (path !== '/' && path !== '/index.html' && path !== '/login.html') {
       window.location.href = '/';
@@ -180,25 +199,66 @@ function initAuthView() {
 
 function initLoginPage() {
   const doLoginBtn = document.getElementById('doLogin');
+  const doSignupBtn = document.getElementById('doSignup');
   const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
   const loginMsg = document.getElementById('loginMsg');
 
-  doLoginBtn.addEventListener('click', () => {
+  doLoginBtn.addEventListener('click', async () => {
     const username = usernameInput.value.trim();
-    if (username) {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('currentUser', username);
-      loginMsg.textContent = translations[currentLang].login_success;
-      loginMsg.style.color = 'green';
-      setTimeout(() => window.location.href = '/', 1000);
-    } else {
-      loginMsg.textContent = translations[currentLang].login_fail;
+    const password = passwordInput.value.trim();
+    if (!username || !password) {
+      loginMsg.textContent = translations[currentLang].fill_all;
       loginMsg.style.color = 'red';
+      return;
     }
+
+    const tx = db.transaction([USERS_STORE], 'readonly');
+    const store = tx.objectStore(USERS_STORE);
+    const request = store.get(username);
+
+    request.onsuccess = () => {
+      const user = request.result;
+      if (user && user.password === password) {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('currentUser', username);
+        loginMsg.textContent = translations[currentLang].login_success;
+        loginMsg.style.color = 'green';
+        setTimeout(() => window.location.href = '/', 1000);
+      } else {
+        loginMsg.textContent = translations[currentLang].login_fail;
+        loginMsg.style.color = 'red';
+      }
+    };
+  });
+
+  doSignupBtn.addEventListener('click', async () => {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+    if (!username || !password) {
+      loginMsg.textContent = translations[currentLang].fill_all;
+      loginMsg.style.color = 'red';
+      return;
+    }
+
+    const tx = db.transaction([USERS_STORE], 'readwrite');
+    const store = tx.objectStore(USERS_STORE);
+    const checkRequest = store.get(username);
+
+    checkRequest.onsuccess = () => {
+      if (checkRequest.result) {
+        loginMsg.textContent = translations[currentLang].id_taken;
+        loginMsg.style.color = 'red';
+      } else {
+        store.add({ username, password });
+        loginMsg.textContent = translations[currentLang].signup_success;
+        loginMsg.style.color = 'green';
+      }
+    };
   });
 }
 
-// Features Logic (only if elements exist)
+// Features Logic
 const startButton = document.getElementById('startButton');
 if (startButton) {
   let mediaRecorder;
@@ -215,6 +275,7 @@ if (startButton) {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         chunks = [];
         await saveRecording(blob);
+        alert('녹음이 본인 계정에 영구 저장되었습니다.');
       };
       mediaRecorder.start();
       startButton.disabled = true;
