@@ -9,13 +9,24 @@
 <body>
   <nav>
     <a href="/">실시간 진단</a>
-    <a href="/recordings.html">녹음 목록</a>
+    <a href="/recordings.html">저장 목록</a>
     <a href="/text_checker.html">문자/이미지 진단</a>
+    <div class="nav-right">
+      <button id="themeToggle">테마 변경</button>
+      <button id="loginBtn">로그인</button>
+    </div>
   </nav>
   <div class="container">
     <h1>녹음된 통화 목록</h1>
     <ul id="recordingsList">
       <p>저장된 녹음이 없습니다.</p>
+    </ul>
+  </div>
+
+  <div class="container">
+    <h1>문자/이미지 진단 결과 목록</h1>
+    <ul id="resultsList">
+      <p>저장된 결과가 없습니다.</p>
     </ul>
   </div>
   <script defer type="text/javascript" src="/main.js"></script>

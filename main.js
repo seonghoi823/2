@@ -1,41 +1,104 @@
 // IndexedDB Setup
 const DB_NAME = 'ScamDetectionDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'recordings';
+const DB_VERSION = 2; // Incremented version for new store
+const RECORDINGS_STORE = 'recordings';
+const RESULTS_STORE = 'results';
 
 let db;
-const request = indexedDB.open(DB_NAME, DB_VERSION);
+const dbRequest = indexedDB.open(DB_NAME, DB_VERSION);
 
-request.onupgradeneeded = (event) => {
+dbRequest.onupgradeneeded = (event) => {
   db = event.target.result;
-  if (!db.objectStoreNames.contains(STORE_NAME)) {
-    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+  if (!db.objectStoreNames.contains(RECORDINGS_STORE)) {
+    db.createObjectStore(RECORDINGS_STORE, { keyPath: 'id', autoIncrement: true });
+  }
+  if (!db.objectStoreNames.contains(RESULTS_STORE)) {
+    db.createObjectStore(RESULTS_STORE, { keyPath: 'id', autoIncrement: true });
   }
 };
 
-request.onsuccess = (event) => {
+dbRequest.onsuccess = (event) => {
   db = event.target.result;
   console.log('Database initialized');
   if (window.location.pathname.includes('recordings.html')) {
     loadRecordings();
+    loadResults();
   }
 };
 
-// UI Elements
+// UI Elements & State
+const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+const currentUser = localStorage.getItem('currentUser') || 'Guest';
+
+// Common UI Logic (Theme & Login)
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initNav();
+  if (window.location.pathname.includes('login.html')) {
+    initLoginPage();
+  }
+});
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
+  }
+}
+
+function initNav() {
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) {
+    loginBtn.textContent = isLoggedIn ? `${currentUser} (로그아웃)` : '로그인';
+    loginBtn.addEventListener('click', () => {
+      if (isLoggedIn) {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
+        window.location.reload();
+      } else {
+        window.location.href = '/login.html';
+      }
+    });
+  }
+}
+
+function initLoginPage() {
+  const doLoginBtn = document.getElementById('doLogin');
+  const usernameInput = document.getElementById('username');
+  const loginMsg = document.getElementById('loginMsg');
+
+  doLoginBtn.addEventListener('click', () => {
+    const username = usernameInput.value.trim();
+    if (username) {
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('currentUser', username);
+      loginMsg.textContent = '로그인 성공! 이동 중...';
+      loginMsg.style.color = 'green';
+      setTimeout(() => window.location.href = '/', 1000);
+    } else {
+      loginMsg.textContent = '아이디를 입력해주세요.';
+      loginMsg.style.color = 'red';
+    }
+  });
+}
+
+// Recording Logic
 const startButton = document.getElementById('startButton');
 const stopButton = document.getElementById('stopButton');
 const statusSpan = document.getElementById('status');
 const recordingsList = document.getElementById('recordingsList');
-const textInput = document.getElementById('textInput');
-const imageInput = document.getElementById('imageInput');
-const checkButton = document.getElementById('checkButton');
-const resultSpan = document.getElementById('result');
 
 let mediaRecorder;
 let chunks = [];
-let analysisInterval;
 
-// Audio Real-time Analysis Logic
 if (startButton) {
   startButton.addEventListener('click', async () => {
     try {
@@ -45,7 +108,7 @@ if (startButton) {
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           chunks.push(e.data);
-          analyzeChunk(e.data); // Real-time simulation
+          analyzeChunk(e.data);
         }
       };
 
@@ -53,10 +116,8 @@ if (startButton) {
         const blob = new Blob(chunks, { type: 'audio/webm' });
         chunks = [];
         await saveRecording(blob);
-        alert('녹음이 저장되었습니다.');
       };
 
-      // Start recording with 5-second intervals for real-time analysis
       mediaRecorder.start(5000); 
       startButton.disabled = true;
       stopButton.disabled = false;
@@ -75,17 +136,12 @@ if (stopButton) {
     startButton.disabled = false;
     stopButton.disabled = true;
     statusSpan.textContent = '대기 중';
-    statusSpan.style.color = 'black';
+    statusSpan.style.color = 'var(--text-color)';
   });
 }
 
-// Real-time AI Simulation & Voice Alert
 function analyzeChunk(blob) {
-  console.log('Analyzing audio chunk...');
-  // Simulate AI detection (randomly or by some criteria)
-  // In a real app, this would send the blob to a server/AI model
-  const isScamSuspected = Math.random() > 0.8; // 20% chance of alert for demo
-
+  const isScamSuspected = Math.random() > 0.9; 
   if (isScamSuspected) {
     const message = "보이스피싱이 의심됩니다. 통화를 주의하시거나 종료하세요.";
     speakAlert(message);
@@ -99,87 +155,126 @@ function speakAlert(message) {
   window.speechSynthesis.speak(utterance);
 }
 
-// Database Operations
-async function saveRecording(blob) {
-  const transaction = db.transaction([STORE_NAME], 'readwrite');
-  const store = transaction.objectStore(STORE_NAME);
-  const recording = {
-    blob: blob,
-    timestamp: new Date().toLocaleString(),
-    name: `통화 녹음 - ${new Date().toLocaleTimeString()}`
-  };
-  store.add(recording);
-}
-
-async function loadRecordings() {
-  if (!db) return;
-  const transaction = db.transaction([STORE_NAME], 'readonly');
-  const store = transaction.objectStore(STORE_NAME);
-  const request = store.getAll();
-
-  request.onsuccess = () => {
-    const recordings = request.result;
-    recordingsList.innerHTML = '';
-    recordings.forEach((rec) => {
-      const li = document.createElement('li');
-      li.className = 'recording-item';
-      
-      const title = document.createElement('p');
-      title.textContent = `${rec.name} (${rec.timestamp})`;
-      
-      const audio = document.createElement('audio');
-      audio.controls = true;
-      audio.src = URL.createObjectURL(rec.blob);
-      
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = '삭제';
-      deleteBtn.onclick = () => deleteRecording(rec.id);
-
-      li.appendChild(title);
-      li.appendChild(audio);
-      li.appendChild(deleteBtn);
-      recordingsList.appendChild(li);
-    });
-  };
-}
-
-function deleteRecording(id) {
-  const transaction = db.transaction([STORE_NAME], 'readwrite');
-  const store = transaction.objectStore(STORE_NAME);
-  store.delete(id);
-  transaction.oncomplete = () => loadRecordings();
-}
-
 // Text/Image Checker Logic
+const textInput = document.getElementById('textInput');
+const imageInput = document.getElementById('imageInput');
+const checkButton = document.getElementById('checkButton');
+const resultSpan = document.getElementById('result');
+
 if (checkButton) {
-  checkButton.addEventListener('click', () => {
+  checkButton.addEventListener('click', async () => {
     const text = textInput.value;
     const image = imageInput.files[0];
+    let analysisResult = '';
 
     if (text) {
-      simulateTextAnalysis(text);
+      analysisResult = simulateTextAnalysis(text);
     } else if (image) {
       resultSpan.textContent = '이미지 분석 중...';
-      setTimeout(() => {
-        resultSpan.textContent = '이미지 분석 결과: 사기 의심 정황 없음 (안전)';
-        resultSpan.style.color = 'green';
-      }, 1500);
+      await new Promise(r => setTimeout(r, 1500));
+      analysisResult = '이미지 분석 결과: 사기 의심 정황 없음 (안전)';
     } else {
       resultSpan.textContent = '분석할 내용이 없습니다.';
-      resultSpan.style.color = 'black';
+      return;
     }
+
+    resultSpan.textContent = analysisResult;
+    resultSpan.style.color = analysisResult.includes('⚠️') ? 'red' : 'green';
+    
+    // Save Result
+    await saveResult({
+      type: text ? 'Text' : 'Image',
+      content: text || image.name,
+      result: analysisResult,
+      timestamp: new Date().toLocaleString(),
+      user: currentUser
+    });
   });
 }
 
 function simulateTextAnalysis(text) {
   const scamKeywords = ['검찰', '입금', '대출', '수사관', '계좌', '본인확인'];
   const foundKeywords = scamKeywords.filter(keyword => text.includes(keyword));
-
-  if (foundKeywords.length > 0) {
-    resultSpan.textContent = `⚠️ 사기 의심! 탐지된 키워드: ${foundKeywords.join(', ')}`;
-    resultSpan.style.color = 'red';
-  } else {
-    resultSpan.textContent = '정상적인 내용으로 보입니다.';
-    resultSpan.style.color = 'green';
-  }
+  return foundKeywords.length > 0 
+    ? `⚠️ 사기 의심! 탐지된 키워드: ${foundKeywords.join(', ')}`
+    : '정상적인 내용으로 보입니다.';
 }
+
+// Database Operations
+async function saveRecording(blob) {
+  const transaction = db.transaction([RECORDINGS_STORE], 'readwrite');
+  const store = transaction.objectStore(RECORDINGS_STORE);
+  const recording = {
+    blob: blob,
+    timestamp: new Date().toLocaleString(),
+    name: `통화 녹음 - ${new Date().toLocaleTimeString()}`,
+    user: currentUser
+  };
+  store.add(recording);
+  transaction.oncomplete = () => alert('녹음이 저장되었습니다.');
+}
+
+async function saveResult(data) {
+  const transaction = db.transaction([RESULTS_STORE], 'readwrite');
+  const store = transaction.objectStore(RESULTS_STORE);
+  store.add(data);
+  transaction.oncomplete = () => console.log('Result saved');
+}
+
+async function loadRecordings() {
+  if (!db) return;
+  const transaction = db.transaction([RECORDINGS_STORE], 'readonly');
+  const store = transaction.objectStore(RECORDINGS_STORE);
+  const request = store.getAll();
+
+  request.onsuccess = () => {
+    const recordings = request.result.filter(r => r.user === currentUser);
+    const list = document.getElementById('recordingsList');
+    list.innerHTML = recordings.length ? '' : '<p>저장된 녹음이 없습니다.</p>';
+    recordings.forEach((rec) => {
+      const li = document.createElement('li');
+      li.className = 'recording-item';
+      li.innerHTML = `
+        <p><strong>${rec.name}</strong> (${rec.timestamp})</p>
+        <audio controls src="${URL.createObjectURL(rec.blob)}"></audio>
+        <br>
+        <button onclick="deleteItem('${RECORDINGS_STORE}', ${rec.id})">삭제</button>
+      `;
+      list.appendChild(li);
+    });
+  };
+}
+
+async function loadResults() {
+  if (!db) return;
+  const transaction = db.transaction([RESULTS_STORE], 'readonly');
+  const store = transaction.objectStore(RESULTS_STORE);
+  const request = store.getAll();
+
+  request.onsuccess = () => {
+    const results = request.result.filter(r => r.user === currentUser);
+    const list = document.getElementById('resultsList');
+    list.innerHTML = results.length ? '' : '<p>저장된 결과가 없습니다.</p>';
+    results.forEach((res) => {
+      const li = document.createElement('li');
+      li.className = 'result-item';
+      li.innerHTML = `
+        <p><strong>[${res.type}]</strong> ${res.timestamp}</p>
+        <p>내용: ${res.content.substring(0, 50)}${res.content.length > 50 ? '...' : ''}</p>
+        <p>결과: ${res.result}</p>
+        <button onclick="deleteItem('${RESULTS_STORE}', ${res.id})">삭제</button>
+      `;
+      list.appendChild(li);
+    });
+  };
+}
+
+window.deleteItem = (storeName, id) => {
+  const transaction = db.transaction([storeName], 'readwrite');
+  const store = transaction.objectStore(storeName);
+  store.delete(id);
+  transaction.oncomplete = () => {
+    if (storeName === RECORDINGS_STORE) loadRecordings();
+    else loadResults();
+  };
+};

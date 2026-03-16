@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 - 실시간 사기 탐지</title>
+  <link href='/style.css' rel='stylesheet'>
+</head>
+<body>
+  <nav>
+    <a href="/">실시간 진단</a>
+    <a href="/recordings.html">저장 목록</a>
+    <a href="/text_checker.html">문자/이미지 진단</a>
+    <div class="nav-right">
+      <button id="themeToggle">테마 변경</button>
+    </div>
+  </nav>
+  <div class="container">
+    <h1>로그인</h1>
+    <p>서비스 이용을 위해 로그인해주세요.</p>
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 0 auto;">
+      <input type="text" id="username" placeholder="사용자 아이디" style="padding: 10px; border-radius: 4px; border: 1px solid var(--input-border); background: var(--card-bg); color: var(--text-color);">
+      <input type="password" id="password" placeholder="비밀번호" style="padding: 10px; border-radius: 4px; border: 1px solid var(--input-border); background: var(--card-bg); color: var(--text-color);">
+      <button id="doLogin" style="background: var(--primary-color); color: white;">로그인</button>
+    </div>
+    <p id="loginMsg" style="margin-top: 15px; font-size: 14px;"></p>
+  </div>
+  <script defer type="text/javascript" src="/main.js"></script>
+</body>
+</html>

@@ -4,6 +4,17 @@
   --success-color: #28a745;
   --bg-color: #f8f9fa;
   --card-bg: #ffffff;
+  --text-color: #333;
+  --nav-bg: #ffffff;
+  --input-border: #ddd;
+}
+
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-color: #e0e0e0;
+  --nav-bg: #1e1e1e;
+  --input-border: #444;
 }
 
 body {
@@ -11,27 +22,38 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-color);
-  color: #333;
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 nav {
   width: 100%;
-  background-color: var(--card-bg);
+  background-color: var(--nav-bg);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   padding: 15px 0;
   text-align: center;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
 }
 
 nav a {
-  margin: 0 15px;
   text-decoration: none;
-  color: #555;
+  color: var(--text-color);
   font-weight: bold;
+}
+
+.nav-right {
+  position: absolute;
+  right: 20px;
+  display: flex;
+  gap: 10px;
 }
 
 nav a:hover {
@@ -39,7 +61,7 @@ nav a:hover {
 }
 
 h1 {
-  color: #222;
+  color: var(--text-color);
   margin-bottom: 20px;
 }
 
@@ -49,8 +71,9 @@ h1 {
   background: var(--card-bg);
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   text-align: center;
+  margin-bottom: 30px;
 }
 
 button {
@@ -62,6 +85,11 @@ button {
   transition: all 0.2s;
   margin: 10px 5px;
   font-weight: 600;
+}
+
+#themeToggle, #loginBtn {
+  padding: 8px 16px;
+  font-size: 14px;
 }
 
 #startButton {
@@ -92,7 +120,9 @@ textarea {
   height: 150px;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
+  background-color: var(--card-bg);
+  color: var(--text-color);
   margin-bottom: 15px;
   box-sizing: border-box;
   font-size: 14px;
@@ -100,6 +130,7 @@ textarea {
 
 input[type="file"] {
   margin-bottom: 20px;
+  color: var(--text-color);
 }
 
 #result {
@@ -115,18 +146,19 @@ ul {
   width: 100%;
 }
 
-.recording-item {
-  background: #f1f3f5;
+.recording-item, .result-item {
+  background: var(--bg-color);
   margin-bottom: 15px;
   padding: 15px;
   border-radius: 8px;
   text-align: left;
+  border: 1px solid var(--input-border);
 }
 
-.recording-item p {
+.recording-item p, .result-item p {
   margin: 0 0 10px 0;
   font-size: 14px;
-  color: #666;
+  color: var(--text-color);
 }
 
 .recording-item audio {
@@ -134,7 +166,7 @@ ul {
   margin-bottom: 10px;
 }
 
-.recording-item button {
+.recording-item button, .result-item button {
   background-color: transparent;
   color: var(--danger-color);
   border: 1px solid var(--danger-color);
@@ -142,7 +174,11 @@ ul {
   font-size: 13px;
 }
 
-.recording-item button:hover {
+.recording-item button:hover, .result-item button:hover {
   background-color: var(--danger-color);
   color: white;
+}
+
+.hidden {
+  display: none;
 }
