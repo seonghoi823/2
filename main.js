@@ -183,9 +183,9 @@ function updateAuthView(user) {
     communityBtns.forEach(btn => btn.classList.add('hidden'));
     
     const path = window.location.pathname;
-    const isLoginPage = path.includes('login.html');
+    const isLoginPage = path.includes('login.html') || path.endsWith('/login');
     const isGuestPage = !!document.getElementById('guestSection');
-    const isPartnershipPage = path.includes('partnership.html');
+    const isPartnershipPage = path.includes('partnership.html') || path.endsWith('/partnership');
     
     if (!isLoginPage && !isGuestPage && !isPartnershipPage) {
       window.location.href = './index.html';
