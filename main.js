@@ -26,7 +26,8 @@ const mockAuth = {
 
 const mockOnAuthStateChanged = (authObj, callback) => {
   mockListeners.push(callback);
-  callback(mockUser);
+  // Execute callback with current mockUser state
+  setTimeout(() => callback(mockUser), 0);
   return () => {
     const idx = mockListeners.indexOf(callback);
     if (idx > -1) mockListeners.splice(idx, 1);
@@ -40,6 +41,9 @@ const mockSignOut = async () => {
 };
 
 const mockSignIn = async (authObj, email, password) => {
+  // Ensure DB is initialized
+  if (!db) await initDB();
+  
   return new Promise((resolve, reject) => {
     const tx = db.transaction('users', 'readonly');
     const store = tx.objectStore('users');
@@ -60,6 +64,9 @@ const mockSignIn = async (authObj, email, password) => {
 };
 
 const mockSignUp = async (authObj, email, password) => {
+  // Ensure DB is initialized
+  if (!db) await initDB();
+
   return new Promise((resolve, reject) => {
     const tx = db.transaction('users', 'readwrite');
     const store = tx.objectStore('users');
@@ -69,10 +76,12 @@ const mockSignUp = async (authObj, email, password) => {
       if (checkRequest.result) {
         reject({ code: 'auth/email-already-in-use' });
       } else {
-        store.add({ username, password });
-        resolve();
+        const addRequest = store.add({ username, password });
+        addRequest.onsuccess = () => resolve();
+        addRequest.onerror = () => reject({ code: 'auth/unknown' });
       }
     };
+    checkRequest.onerror = () => reject({ code: 'auth/unknown' });
   });
 };
 
