@@ -35,15 +35,16 @@ let db;
 // --- 3. 데이터베이스 초기화 (Promise) ---
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ScamDetectionDB', 3);
+    const request = indexedDB.open('ScamDetectionDB', 4); // 버전업
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
       if (!db.objectStoreNames.contains('results')) db.createObjectStore('results', { keyPath: 'id', autoIncrement: true });
       if (!db.objectStoreNames.contains('users')) db.createObjectStore('users', { keyPath: 'username' });
+      if (!db.objectStoreNames.contains('posts')) db.createObjectStore('posts', { keyPath: 'id', autoIncrement: true });
     };
     request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-    request.onerror = (e) => reject(e);
+    request.onerror = (e) => { console.error('DB Error:', e); reject(e); };
   });
 }
 
@@ -96,7 +97,7 @@ function updateAuthView() {
 }
 
 // --- 5. 커뮤니티 로직 ---
-function setupCommunity() {
+async function setupCommunity() {
   const listSection = document.getElementById('listSection');
   if (!listSection) return;
 
@@ -109,30 +110,45 @@ function setupCommunity() {
   const backBtn = document.getElementById('backToList');
   const likeBtn = document.getElementById('likeButton');
 
-  // 데이터 로드
-  const getPosts = () => JSON.parse(localStorage.getItem('posts') || '[]');
-  const savePosts = (posts) => localStorage.setItem('posts', JSON.stringify(posts));
+  // IndexedDB 데이터 로드
+  const getPosts = () => new Promise((resolve) => {
+    const tx = db.transaction('posts', 'readonly');
+    tx.objectStore('posts').getAll().onsuccess = (e) => resolve(e.target.result);
+  });
 
-  const renderList = () => {
-    const posts = getPosts().sort((a, b) => b.id - a.id);
+  const savePost = (post) => new Promise((resolve) => {
+    const tx = db.transaction('posts', 'readwrite');
+    tx.objectStore('posts').add(post).onsuccess = () => resolve();
+  });
+
+  const updatePost = (post) => new Promise((resolve) => {
+    const tx = db.transaction('posts', 'readwrite');
+    tx.objectStore('posts').put(post).onsuccess = () => resolve();
+  });
+
+  const renderList = async () => {
+    const posts = await getPosts();
+    posts.sort((a, b) => b.id - a.id);
     postList.innerHTML = posts.length ? '' : '<p>첫 번째 글을 작성해보세요!</p>';
     posts.forEach(post => {
       const div = document.createElement('div');
-      div.className = 'recording-item'; // 기존 스타일 재사용
+      div.className = 'recording-item';
       div.style.cursor = 'pointer';
       div.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h3 style="margin: 0;">${post.title}</h3>
           <span style="color: var(--danger-color);">❤️ ${post.likes || 0}</span>
         </div>
+        <p style="font-size: 12px; color: #888; margin-top: 5px;">${post.isAnonymous ? '익명' : post.author} | ${post.timestamp}</p>
       `;
       div.onclick = () => showDetail(post.id);
       postList.appendChild(div);
     });
   };
 
-  const showDetail = (id) => {
-    const post = getPosts().find(p => p.id === id);
+  const showDetail = async (id) => {
+    const posts = await getPosts();
+    const post = posts.find(p => p.id === id);
     if (!post) return;
 
     document.getElementById('detailTitle').textContent = post.title;
@@ -145,18 +161,14 @@ function setupCommunity() {
     writeSection.classList.add('hidden');
     detailSection.classList.remove('hidden');
 
-    // Disqus 로드
     if (typeof loadDisqus === 'function') {
       loadDisqus(post.id, post.title);
     }
 
-    // 공감 버튼 이벤트
-    likeBtn.onclick = () => {
-      const posts = getPosts();
-      const pIdx = posts.findIndex(p => p.id === id);
-      posts[pIdx].likes = (posts[pIdx].likes || 0) + 1;
-      savePosts(posts);
-      document.getElementById('detailLikes').textContent = posts[pIdx].likes;
+    likeBtn.onclick = async () => {
+      post.likes = (post.likes || 0) + 1;
+      await updatePost(post);
+      document.getElementById('detailLikes').textContent = post.likes;
     };
   };
 
@@ -176,7 +188,7 @@ function setupCommunity() {
     renderList();
   };
 
-  submitBtn.onclick = () => {
+  submitBtn.onclick = async () => {
     const title = document.getElementById('postTitle').value.trim();
     const content = document.getElementById('postContent').value.trim();
     const isAnonymous = document.getElementById('isAnonymous').checked;
@@ -186,28 +198,25 @@ function setupCommunity() {
       return;
     }
 
-    const posts = getPosts();
     const newPost = {
-      id: Date.now(),
       title,
       content,
       isAnonymous,
-      author: localStorage.getItem('currentUser'),
+      author: localStorage.getItem('currentUser') || '익명',
       likes: 0,
       timestamp: new Date().toLocaleString()
     };
 
-    posts.push(newPost);
-    savePosts(posts);
+    await savePost(newPost);
     
     document.getElementById('postTitle').value = '';
     document.getElementById('postContent').value = '';
     writeSection.classList.add('hidden');
     listSection.classList.remove('hidden');
-    renderList();
+    await renderList();
   };
 
-  renderList();
+  await renderList();
 }
 
 // --- 6. 페이지별 로직 ---
@@ -227,11 +236,9 @@ async function setupPages() {
 
   document.getElementById('loginBtn')?.addEventListener('click', () => {
     if (localStorage.getItem('isLoggedIn') === 'true') {
-      const theme = localStorage.getItem('theme');
-      const lang = localStorage.getItem('lang');
-      localStorage.clear();
-      localStorage.setItem('theme', theme);
-      localStorage.setItem('lang', lang);
+      // 로그아웃 시 특정 키만 삭제 (전체 삭제 금지)
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('currentUser');
       window.location.href = './index.html';
     } else {
       window.location.href = './login.html';
@@ -239,7 +246,7 @@ async function setupPages() {
   });
 
   // 커뮤니티 초기화
-  setupCommunity();
+  await setupCommunity();
 
   // 로그인/회원가입 페이지
   const doLogin = document.getElementById('doLogin');
@@ -249,12 +256,18 @@ async function setupPages() {
     const passIn = document.getElementById('password');
     const msg = document.getElementById('loginMsg');
 
-    doLogin.onclick = () => {
+    doLogin.addEventListener('click', () => {
+      const username = userIn.value.trim();
+      const password = passIn.value.trim();
+      if (!username || !password) {
+        msg.textContent = translations[currentLang].fill_all;
+        return;
+      }
       const tx = db.transaction('users', 'readonly');
-      const request = tx.objectStore('users').get(userIn.value.trim());
+      const request = tx.objectStore('users').get(username);
       request.onsuccess = () => {
         const user = request.result;
-        if (user && user.password === passIn.value.trim()) {
+        if (user && user.password === password) {
           localStorage.setItem('isLoggedIn', 'true');
           localStorage.setItem('currentUser', user.username);
           msg.textContent = translations[currentLang].login_success;
@@ -263,9 +276,9 @@ async function setupPages() {
           msg.textContent = translations[currentLang].login_fail;
         }
       };
-    };
+    });
 
-    doSignup.onclick = () => {
+    doSignup.addEventListener('click', () => {
       const username = userIn.value.trim();
       const password = passIn.value.trim();
       if (!username || !password) {
@@ -283,7 +296,7 @@ async function setupPages() {
           msg.textContent = translations[currentLang].signup_success;
         }
       };
-    };
+    });
   }
 
   // 실시간 진단 (index.html)
@@ -375,9 +388,13 @@ window.deleteItem = (store, id) => {
 
 // --- 7. 실행 시작 ---
 (async () => {
-  document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
-  updateAuthView();
-  await initDB();
-  applyLang();
-  await setupPages();
+  try {
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    await initDB();
+    updateAuthView();
+    applyLang();
+    await setupPages();
+  } catch (err) {
+    console.error('Initialization failed:', err);
+  }
 })();
