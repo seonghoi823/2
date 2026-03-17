@@ -13,10 +13,88 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const fs = getFirestore(app);
+// --- 0. Mock System (For testing without Firebase) ---
+const isMock = firebaseConfig.apiKey === "YOUR_API_KEY";
+
+let auth, fs;
+let mockUser = JSON.parse(localStorage.getItem('mockUser') || 'null');
+const mockListeners = [];
+
+const mockAuth = {
+  get currentUser() { return mockUser; }
+};
+
+const mockOnAuthStateChanged = (authObj, callback) => {
+  mockListeners.push(callback);
+  callback(mockUser);
+  return () => {
+    const idx = mockListeners.indexOf(callback);
+    if (idx > -1) mockListeners.splice(idx, 1);
+  };
+};
+
+const mockSignOut = async () => {
+  mockUser = null;
+  localStorage.removeItem('mockUser');
+  mockListeners.forEach(cb => cb(null));
+};
+
+const mockSignIn = async (authObj, email, password) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('users', 'readonly');
+    const store = tx.objectStore('users');
+    const request = store.get(email.split('@')[0]);
+    request.onsuccess = () => {
+      const user = request.result;
+      if (user && user.password === password) {
+        mockUser = { uid: email, email: email };
+        localStorage.setItem('mockUser', JSON.stringify(mockUser));
+        mockListeners.forEach(cb => cb(mockUser));
+        resolve({ user: mockUser });
+      } else {
+        reject({ code: 'auth/wrong-password' });
+      }
+    };
+    request.onerror = () => reject({ code: 'auth/user-not-found' });
+  });
+};
+
+const mockSignUp = async (authObj, email, password) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('users', 'readwrite');
+    const store = tx.objectStore('users');
+    const username = email.split('@')[0];
+    const checkRequest = store.get(username);
+    checkRequest.onsuccess = () => {
+      if (checkRequest.result) {
+        reject({ code: 'auth/email-already-in-use' });
+      } else {
+        store.add({ username, password });
+        resolve();
+      }
+    };
+  });
+};
+
+// Firestore Mock
+const mockFs = {
+  // Very basic mock for firestore
+};
+
+if (!isMock) {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  fs = getFirestore(app);
+} else {
+  console.warn("Firebase API Key is missing. Using Mock Auth (IndexedDB).");
+  auth = mockAuth;
+}
+
+// Wrap Firebase functions to use mocks if necessary
+const _onAuthStateChanged = isMock ? mockOnAuthStateChanged : onAuthStateChanged;
+const _signInWithEmailAndPassword = isMock ? mockSignIn : signInWithEmailAndPassword;
+const _createUserWithEmailAndPassword = isMock ? mockSignUp : createUserWithEmailAndPassword;
+const _signOut = isMock ? mockSignOut : signOut;
 
 // --- 1. 다국어 데이터 ---
 const translations = {
@@ -131,14 +209,29 @@ async function setupCommunity() {
   const likeBtn = document.getElementById('likeButton');
 
   // Firestore 리스너 (실시간 동기화)
-  const q = query(collection(fs, "posts"), orderBy("timestamp", "desc"));
-  onSnapshot(q, (snapshot) => {
-    const posts = [];
-    snapshot.forEach((doc) => {
-      posts.push({ id: doc.id, ...doc.data() });
+  if (!isMock) {
+    const q = query(collection(fs, "posts"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+      const posts = [];
+      snapshot.forEach((doc) => {
+        posts.push({ id: doc.id, ...doc.data() });
+      });
+      renderList(posts);
     });
-    renderList(posts);
-  });
+  } else {
+    // Mock for community list
+    const updateMockList = () => {
+      const tx = db.transaction('posts', 'readonly');
+      const store = tx.objectStore('posts');
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const posts = request.result.sort((a, b) => b.timestamp - a.timestamp);
+        renderList(posts);
+      };
+    };
+    updateMockList();
+    window.addEventListener('post-added', updateMockList);
+  }
 
   const renderList = (posts) => {
     postList.innerHTML = posts.length ? '' : '<p>첫 번째 글을 작성해보세요!</p>';
@@ -151,7 +244,7 @@ async function setupCommunity() {
           <h3 style="margin: 0;">${post.title}</h3>
           <span style="color: var(--danger-color);">❤️ ${post.likes || 0}</span>
         </div>
-        <p style="font-size: 12px; color: #888; margin-top: 5px;">${post.isAnonymous ? '익명' : post.authorName} | ${post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : ''}</p>
+        <p style="font-size: 12px; color: #888; margin-top: 5px;">${post.isAnonymous ? '익명' : post.authorName} | ${post.timestamp ? new Date(isMock ? post.timestamp : post.timestamp.seconds * 1000).toLocaleString() : ''}</p>
       `;
       div.onclick = () => showDetail(post);
       postList.appendChild(div);
@@ -161,7 +254,7 @@ async function setupCommunity() {
   const showDetail = (post) => {
     document.getElementById('detailTitle').textContent = post.title;
     document.getElementById('detailAuthor').textContent = post.isAnonymous ? '익명' : post.authorName;
-    document.getElementById('detailDate').textContent = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : '';
+    document.getElementById('detailDate').textContent = post.timestamp ? new Date(isMock ? post.timestamp : post.timestamp.seconds * 1000).toLocaleString() : '';
     document.getElementById('detailContent').textContent = post.content;
     document.getElementById('detailLikes').textContent = post.likes || 0;
 
@@ -174,10 +267,17 @@ async function setupCommunity() {
     }
 
     likeBtn.onclick = async () => {
-      const postRef = doc(fs, "posts", post.id);
-      await updateDoc(postRef, {
-        likes: (post.likes || 0) + 1
-      });
+      if (!isMock) {
+        const postRef = doc(fs, "posts", post.id);
+        await updateDoc(postRef, {
+          likes: (post.likes || 0) + 1
+        });
+      } else {
+        const tx = db.transaction('posts', 'readwrite');
+        const store = tx.objectStore('posts');
+        post.likes = (post.likes || 0) + 1;
+        store.put(post);
+      }
       document.getElementById('detailLikes').textContent = (post.likes || 0) + 1;
     };
   };
@@ -218,7 +318,16 @@ async function setupCommunity() {
       timestamp: new Date()
     };
 
-    await addDoc(collection(fs, "posts"), newPost);
+    if (!isMock) {
+      await addDoc(collection(fs, "posts"), newPost);
+    } else {
+      const tx = db.transaction('posts', 'readwrite');
+      const store = tx.objectStore('posts');
+      store.add(newPost);
+      tx.oncomplete = () => {
+        window.dispatchEvent(new CustomEvent('post-added'));
+      };
+    }
     
     document.getElementById('postTitle').value = '';
     document.getElementById('postContent').value = '';
@@ -243,7 +352,7 @@ async function setupPages() {
 
   document.getElementById('loginBtn')?.addEventListener('click', async () => {
     if (auth.currentUser) {
-      await signOut(auth);
+      await _signOut(auth);
       window.location.href = './index.html';
     } else {
       window.location.href = './login.html';
@@ -268,7 +377,7 @@ async function setupPages() {
         return;
       }
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        await _signInWithEmailAndPassword(auth, email, password);
         msg.textContent = translations[currentLang].login_success;
         setTimeout(() => window.location.href = './index.html', 500);
       } catch (err) {
@@ -289,7 +398,7 @@ async function setupPages() {
         return;
       }
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await _createUserWithEmailAndPassword(auth, email, password);
         msg.textContent = translations[currentLang].signup_success;
       } catch (err) {
         console.error(err);
@@ -347,7 +456,7 @@ async function setupPages() {
     await initDB();
     
     // Auth 상태 변경 리스너
-    onAuthStateChanged(auth, (user) => {
+    _onAuthStateChanged(auth, (user) => {
       updateAuthView(user);
     });
 
