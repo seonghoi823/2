@@ -41,47 +41,53 @@ const mockSignOut = async () => {
 };
 
 const mockSignIn = async (authObj, email, password) => {
-  // Ensure DB is initialized
   if (!db) await initDB();
   
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('users', 'readonly');
-    const store = tx.objectStore('users');
-    const request = store.get(email.split('@')[0]);
-    request.onsuccess = () => {
-      const user = request.result;
-      if (user && user.password === password) {
-        mockUser = { uid: email, email: email };
-        localStorage.setItem('mockUser', JSON.stringify(mockUser));
-        mockListeners.forEach(cb => cb(mockUser));
-        resolve({ user: mockUser });
-      } else {
-        reject({ code: 'auth/wrong-password' });
-      }
-    };
-    request.onerror = () => reject({ code: 'auth/user-not-found' });
+    try {
+      const tx = db.transaction('users', 'readonly');
+      const store = tx.objectStore('users');
+      const request = store.get(email.split('@')[0]);
+      request.onsuccess = () => {
+        const user = request.result;
+        if (user && user.password === password) {
+          mockUser = { uid: email, email: email };
+          localStorage.setItem('mockUser', JSON.stringify(mockUser));
+          mockListeners.forEach(cb => cb(mockUser));
+          resolve({ user: mockUser });
+        } else {
+          reject({ code: 'auth/wrong-password', message: '아이디 또는 비밀번호가 틀립니다.' });
+        }
+      };
+      request.onerror = () => reject({ code: 'auth/user-not-found', message: '사용자를 찾을 수 없습니다.' });
+    } catch (e) {
+      reject({ code: 'auth/unknown', message: '로그인 도중 오류가 발생했습니다: ' + e.message });
+    }
   });
 };
 
 const mockSignUp = async (authObj, email, password) => {
-  // Ensure DB is initialized
   if (!db) await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction('users', 'readwrite');
-    const store = tx.objectStore('users');
-    const username = email.split('@')[0];
-    const checkRequest = store.get(username);
-    checkRequest.onsuccess = () => {
-      if (checkRequest.result) {
-        reject({ code: 'auth/email-already-in-use' });
-      } else {
-        const addRequest = store.add({ username, password });
-        addRequest.onsuccess = () => resolve();
-        addRequest.onerror = () => reject({ code: 'auth/unknown' });
-      }
-    };
-    checkRequest.onerror = () => reject({ code: 'auth/unknown' });
+    try {
+      const tx = db.transaction('users', 'readwrite');
+      const store = tx.objectStore('users');
+      const username = email.split('@')[0];
+      const checkRequest = store.get(username);
+      checkRequest.onsuccess = () => {
+        if (checkRequest.result) {
+          reject({ code: 'auth/email-already-in-use', message: '이미 존재하는 아이디입니다.' });
+        } else {
+          const addRequest = store.add({ username, password });
+          addRequest.onsuccess = () => resolve();
+          addRequest.onerror = () => reject({ code: 'auth/unknown', message: '가입 저장 중 오류가 발생했습니다.' });
+        }
+      };
+      checkRequest.onerror = () => reject({ code: 'auth/unknown', message: '아이디 확인 중 오류가 발생했습니다.' });
+    } catch (e) {
+      reject({ code: 'auth/unknown', message: '데이터베이스 연결 오류: ' + e.message });
+    }
   });
 };
 
