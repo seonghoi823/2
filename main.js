@@ -1,3 +1,23 @@
+// Firebase Configuration - REPLACE WITH YOUR ACTUAL CONFIG
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const fs = getFirestore(app);
+
 // --- 1. 다국어 데이터 ---
 const translations = {
   ko: {
@@ -32,10 +52,10 @@ const translations = {
 let currentLang = localStorage.getItem('lang') || 'ko';
 let db;
 
-// --- 3. 데이터베이스 초기화 (Promise) ---
+// --- 3. 데이터베이스 초기화 (IndexedDB - 로컬 보조용) ---
 function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('ScamDetectionDB', 4); // 버전업
+    const request = indexedDB.open('ScamDetectionDB', 4);
     request.onupgradeneeded = (e) => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
@@ -61,13 +81,13 @@ function applyLang() {
   
   const loginBtn = document.getElementById('loginBtn');
   if (loginBtn) {
-    const user = localStorage.getItem('currentUser');
-    loginBtn.textContent = user ? `${user} (${translations[lang].btn_logout})` : translations[lang].btn_login;
+    const user = auth.currentUser;
+    loginBtn.textContent = user ? `${user.email.split('@')[0]} (${translations[lang].btn_logout})` : translations[lang].btn_login;
   }
 }
 
-function updateAuthView() {
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+function updateAuthView(user) {
+  const isLoggedIn = !!user;
   const guestSection = document.getElementById('guestSection');
   const mainSection = document.getElementById('mainSection');
   const nav = document.querySelector('nav');
@@ -84,9 +104,8 @@ function updateAuthView() {
     if (nav) nav.classList.add('hidden');
     communityBtns.forEach(btn => btn.classList.add('hidden'));
     
-    // 보호된 페이지 접근 제한
     const path = window.location.pathname;
-    const isLoginPage = !!document.getElementById('doLogin');
+    const isLoginPage = path.includes('login.html');
     const isGuestPage = !!document.getElementById('guestSection');
     const isPartnershipPage = path.includes('partnership.html');
     
@@ -94,9 +113,10 @@ function updateAuthView() {
       window.location.href = './index.html';
     }
   }
+  applyLang();
 }
 
-// --- 5. 커뮤니티 로직 ---
+// --- 5. 커뮤니티 로직 (Firestore 연동) ---
 async function setupCommunity() {
   const listSection = document.getElementById('listSection');
   if (!listSection) return;
@@ -110,25 +130,17 @@ async function setupCommunity() {
   const backBtn = document.getElementById('backToList');
   const likeBtn = document.getElementById('likeButton');
 
-  // IndexedDB 데이터 로드
-  const getPosts = () => new Promise((resolve) => {
-    const tx = db.transaction('posts', 'readonly');
-    tx.objectStore('posts').getAll().onsuccess = (e) => resolve(e.target.result);
+  // Firestore 리스너 (실시간 동기화)
+  const q = query(collection(fs, "posts"), orderBy("timestamp", "desc"));
+  onSnapshot(q, (snapshot) => {
+    const posts = [];
+    snapshot.forEach((doc) => {
+      posts.push({ id: doc.id, ...doc.data() });
+    });
+    renderList(posts);
   });
 
-  const savePost = (post) => new Promise((resolve) => {
-    const tx = db.transaction('posts', 'readwrite');
-    tx.objectStore('posts').add(post).onsuccess = () => resolve();
-  });
-
-  const updatePost = (post) => new Promise((resolve) => {
-    const tx = db.transaction('posts', 'readwrite');
-    tx.objectStore('posts').put(post).onsuccess = () => resolve();
-  });
-
-  const renderList = async () => {
-    const posts = await getPosts();
-    posts.sort((a, b) => b.id - a.id);
+  const renderList = (posts) => {
     postList.innerHTML = posts.length ? '' : '<p>첫 번째 글을 작성해보세요!</p>';
     posts.forEach(post => {
       const div = document.createElement('div');
@@ -139,21 +151,17 @@ async function setupCommunity() {
           <h3 style="margin: 0;">${post.title}</h3>
           <span style="color: var(--danger-color);">❤️ ${post.likes || 0}</span>
         </div>
-        <p style="font-size: 12px; color: #888; margin-top: 5px;">${post.isAnonymous ? '익명' : post.author} | ${post.timestamp}</p>
+        <p style="font-size: 12px; color: #888; margin-top: 5px;">${post.isAnonymous ? '익명' : post.authorName} | ${post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : ''}</p>
       `;
-      div.onclick = () => showDetail(post.id);
+      div.onclick = () => showDetail(post);
       postList.appendChild(div);
     });
   };
 
-  const showDetail = async (id) => {
-    const posts = await getPosts();
-    const post = posts.find(p => p.id === id);
-    if (!post) return;
-
+  const showDetail = (post) => {
     document.getElementById('detailTitle').textContent = post.title;
-    document.getElementById('detailAuthor').textContent = post.isAnonymous ? '익명' : post.author;
-    document.getElementById('detailDate').textContent = post.timestamp;
+    document.getElementById('detailAuthor').textContent = post.isAnonymous ? '익명' : post.authorName;
+    document.getElementById('detailDate').textContent = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : '';
     document.getElementById('detailContent').textContent = post.content;
     document.getElementById('detailLikes').textContent = post.likes || 0;
 
@@ -166,9 +174,11 @@ async function setupCommunity() {
     }
 
     likeBtn.onclick = async () => {
-      post.likes = (post.likes || 0) + 1;
-      await updatePost(post);
-      document.getElementById('detailLikes').textContent = post.likes;
+      const postRef = doc(fs, "posts", post.id);
+      await updateDoc(postRef, {
+        likes: (post.likes || 0) + 1
+      });
+      document.getElementById('detailLikes').textContent = (post.likes || 0) + 1;
     };
   };
 
@@ -185,7 +195,6 @@ async function setupCommunity() {
   backBtn.onclick = () => {
     detailSection.classList.add('hidden');
     listSection.classList.remove('hidden');
-    renderList();
   };
 
   submitBtn.onclick = async () => {
@@ -198,30 +207,28 @@ async function setupCommunity() {
       return;
     }
 
+    const user = auth.currentUser;
     const newPost = {
       title,
       content,
       isAnonymous,
-      author: localStorage.getItem('currentUser') || '익명',
+      authorId: user.uid,
+      authorName: user.email.split('@')[0],
       likes: 0,
-      timestamp: new Date().toLocaleString()
+      timestamp: new Date()
     };
 
-    await savePost(newPost);
+    await addDoc(collection(fs, "posts"), newPost);
     
     document.getElementById('postTitle').value = '';
     document.getElementById('postContent').value = '';
     writeSection.classList.add('hidden');
     listSection.classList.remove('hidden');
-    await renderList();
   };
-
-  await renderList();
 }
 
 // --- 6. 페이지별 로직 ---
 async function setupPages() {
-  // 테마/언어 설정 (공통)
   document.getElementById('themeToggle')?.addEventListener('click', () => {
     const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', theme);
@@ -234,18 +241,15 @@ async function setupPages() {
     applyLang();
   });
 
-  document.getElementById('loginBtn')?.addEventListener('click', () => {
-    if (localStorage.getItem('isLoggedIn') === 'true') {
-      // 로그아웃 시 특정 키만 삭제 (전체 삭제 금지)
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('currentUser');
+  document.getElementById('loginBtn')?.addEventListener('click', async () => {
+    if (auth.currentUser) {
+      await signOut(auth);
       window.location.href = './index.html';
     } else {
       window.location.href = './login.html';
     }
   });
 
-  // 커뮤니티 초기화
   await setupCommunity();
 
   // 로그인/회원가입 페이지
@@ -256,46 +260,45 @@ async function setupPages() {
     const passIn = document.getElementById('password');
     const msg = document.getElementById('loginMsg');
 
-    doLogin.addEventListener('click', () => {
-      const username = userIn.value.trim();
+    doLogin.addEventListener('click', async () => {
+      const email = userIn.value.trim() + "@temp.com"; // 기존 아이디 방식을 이메일 형식으로 보완
       const password = passIn.value.trim();
-      if (!username || !password) {
+      if (!userIn.value.trim() || !password) {
         msg.textContent = translations[currentLang].fill_all;
         return;
       }
-      const tx = db.transaction('users', 'readonly');
-      const request = tx.objectStore('users').get(username);
-      request.onsuccess = () => {
-        const user = request.result;
-        if (user && user.password === password) {
-          localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('currentUser', user.username);
-          msg.textContent = translations[currentLang].login_success;
-          setTimeout(() => window.location.href = './index.html', 500);
-        } else {
-          msg.textContent = translations[currentLang].login_fail;
-        }
-      };
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        msg.textContent = translations[currentLang].login_success;
+        setTimeout(() => window.location.href = './index.html', 500);
+      } catch (err) {
+        console.error(err);
+        msg.textContent = translations[currentLang].login_fail;
+      }
     });
 
-    doSignup.addEventListener('click', () => {
-      const username = userIn.value.trim();
+    doSignup.addEventListener('click', async () => {
+      const email = userIn.value.trim() + "@temp.com";
       const password = passIn.value.trim();
-      if (!username || !password) {
+      if (!userIn.value.trim() || !password) {
         msg.textContent = translations[currentLang].fill_all;
         return;
       }
-      const tx = db.transaction('users', 'readwrite');
-      const store = tx.objectStore('users');
-      const check = store.get(username);
-      check.onsuccess = () => {
-        if (check.result) {
+      if (password.length < 6) {
+        msg.textContent = "비밀번호는 6자리 이상이어야 합니다.";
+        return;
+      }
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        msg.textContent = translations[currentLang].signup_success;
+      } catch (err) {
+        console.error(err);
+        if (err.code === 'auth/email-already-in-use') {
           msg.textContent = translations[currentLang].id_taken;
         } else {
-          store.add({ username, password });
-          msg.textContent = translations[currentLang].signup_success;
+          msg.textContent = "가입 실패: " + err.message;
         }
-      };
+      }
     });
   }
 
@@ -317,7 +320,7 @@ async function setupPages() {
           chunks = [];
           const tx = db.transaction('recordings', 'readwrite');
           tx.objectStore('recordings').add({ 
-            blob, user: localStorage.getItem('currentUser'), 
+            blob, user: auth.currentUser?.uid, 
             timestamp: new Date().toLocaleString(), name: 'Call ' + new Date().toLocaleTimeString() 
           });
           alert('저장 완료!');
@@ -335,64 +338,19 @@ async function setupPages() {
       status.textContent = translations[currentLang].status_idle;
     };
   }
-
-  // 목록 로드 (recordings.html)
-  if (document.getElementById('recordingsList')) {
-    const user = localStorage.getItem('currentUser');
-    db.transaction('recordings', 'readonly').objectStore('recordings').getAll().onsuccess = (e) => {
-      const list = document.getElementById('recordingsList');
-      const items = e.target.result.filter(r => r.user === user);
-      list.innerHTML = items.length ? '' : translations[currentLang].no_data;
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'recording-item';
-        div.innerHTML = `<p>${item.name}</p><audio controls src="${URL.createObjectURL(item.blob)}"></audio>
-          <button onclick="deleteItem('recordings', ${item.id})">Delete</button>`;
-        list.appendChild(div);
-      });
-    };
-    db.transaction('results', 'readonly').objectStore('results').getAll().onsuccess = (e) => {
-      const list = document.getElementById('resultsList');
-      const items = e.target.result.filter(r => r.user === user);
-      list.innerHTML = items.length ? '' : translations[currentLang].no_data;
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'result-item';
-        div.innerHTML = `<p>${item.timestamp}</p><p>${item.result}</p>
-          <button onclick="deleteItem('results', ${item.id})">Delete</button>`;
-        list.appendChild(div);
-      });
-    };
-  }
-
-  // 문자 진단 (text_checker.html)
-  const checkBtn = document.getElementById('checkButton');
-  if (checkBtn) {
-    checkBtn.onclick = () => {
-      const text = document.getElementById('textInput').value;
-      const resEl = document.getElementById('result');
-      const scam = text.includes('검찰') || text.includes('입금');
-      const result = scam ? '⚠️ 사기 의심' : '정상';
-      resEl.textContent = result;
-      db.transaction('results', 'readwrite').objectStore('results').add({
-        user: localStorage.getItem('currentUser'), result, timestamp: new Date().toLocaleString()
-      });
-    };
-  }
 }
-
-// 전역 삭제 함수
-window.deleteItem = (store, id) => {
-  db.transaction(store, 'readwrite').objectStore(store).delete(id).onsuccess = () => window.location.reload();
-};
 
 // --- 7. 실행 시작 ---
 (async () => {
   try {
     document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
     await initDB();
-    updateAuthView();
-    applyLang();
+    
+    // Auth 상태 변경 리스너
+    onAuthStateChanged(auth, (user) => {
+      updateAuthView(user);
+    });
+
     await setupPages();
   } catch (err) {
     console.error('Initialization failed:', err);
